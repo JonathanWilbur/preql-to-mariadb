@@ -1,0 +1,149 @@
+transpileTo: mariadb
+objects:
+  - apiVersion: preql/1.0.0
+    kind: DataType
+    metadata:
+      name: varchar
+    spec:
+      jsonEquivalent: string
+      targets:
+        mariadb:
+          return: 'VARCHAR(%l)'
+          # returnBasedOnLength:
+          #   1: 'BOOLEAN'
+          #   8: 'VARCHAR(8)'
+          #   32: 'VARCHAR(32)'
+          check:
+            - 'LENGTH(%a) <= %l'
+          setters:
+            - 'UPPER(%a)'
+  - apiVersion: preql/1.0.0
+    kind: Database
+    metadata:
+      name: floofy
+    spec:
+      name: floofy
+      collation: utf8
+  - apiVersion: preql/1.0.0
+    kind: Struct
+    metadata:
+      name: people
+    spec:
+      name: person
+      databaseName: floofy
+  - apiVersion: preql/1.0.0
+    kind: Struct
+    metadata:
+      name: pet
+      labels:
+        schema: dbo
+        table: pets
+        entity: pet
+      annotations:
+        comment: "A big ol dang table of pets"
+    spec:
+      name: pet
+      databaseName: floofy
+  - apiVersion: preql/1.0.0
+    kind: Attribute
+    metadata:
+      name: ownerFirstName
+      annotations:
+        comment: "Should not be abbreviated"
+    spec:
+      name: ownerFirstName
+      structName: pet
+      databaseName: floofy
+      type: varchar
+      length: 4
+      nullable: False
+      default: Bob
+      casing: upper
+  - apiVersion: preql/1.0.0
+    kind: Attribute
+    metadata:
+      name: ownerLastName
+      annotations:
+        comment: "Should not be abbreviated"
+    spec:
+      name: ownerLastName
+      structName: pet
+      databaseName: floofy
+      type: varchar
+      length: 64
+      nullable: False
+      default: Bob
+      casing: upper
+  - apiVersion: preql/1.0.0
+    kind: Attribute
+    metadata:
+      name: firstName
+      annotations:
+        comment: "Should not be abbreviated"
+    spec:
+      name: firstName
+      structName: person
+      databaseName: floofy
+      type: varchar
+      length: 4
+      nullable: False
+      default: Bob
+      casing: upper
+  - apiVersion: preql/1.0.0
+    kind: Attribute
+    metadata:
+      name: lastName
+      annotations:
+        comment: "Should not be abbreviated"
+    spec:
+      name: lastName
+      structName: person
+      databaseName: floofy
+      type: varchar
+      length: 64
+      nullable: False
+      default: McGobb
+      casing: upper
+  - apiVersion: preql/1.0.0
+    kind: PrimaryIndex
+    metadata:
+      name: important
+      annotations:
+        comment: "Ogres are like onions."
+    spec:
+      name: important
+      structName: person
+      databaseName: floofy
+      keyColumns:
+      - name: firstName
+        ascending: True
+      - name: lastName
+  - apiVersion: preql/1.0.0
+    kind: ForeignKeyConstraint
+    metadata:
+      name: owner
+    spec:
+      name: fk_something
+      databaseName: floofy
+      child:
+        struct: pet
+        key:
+        - attributeName: ownerFirstName
+        - attributeName: ownerLastName
+      parent:
+        struct: person
+        key:
+        - attributeName: firstName
+        - attributeName: lastName
+  - apiVersion: preql/1.0.0
+    kind: Entry
+    metadata:
+      name: myself
+      labels:
+        name: biggay
+    spec:
+      databaseName: floofy
+      structName: person
+      values:
+        firstName: Jonathan
+        lastName: Wilbur
