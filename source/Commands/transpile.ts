@@ -1,4 +1,4 @@
-import { APIObject, SuggestedTargetIndexHandler, SuggestedTargetObjectHandler, APIObjectDatabase, Logger, DatabaseSpec, StructSpec } from 'preql-core';
+import { APIObject, SuggestedTargetIndexHandler, SuggestedTargetObjectHandler, APIObjectDatabase, Logger, DatabaseSpec, StructSpec, AttributeSpec, DataTypeSpec, transpileDataType, printf } from 'preql-core';
 
 // This will break once you upgrade to a higher version of MariaDB.
 // See: https://dataedo.com/kb/query/mariadb/list-check-constraints-in-database
@@ -38,47 +38,128 @@ const dropAllPreqlCheckConstraintsForTableTemplate = (db: APIObject<DatabaseSpec
   + 'DELIMITER ;\r\n\r\n';
 };
 
-const transpileDatabase: SuggestedTargetObjectHandler = async (obj: APIObject<DatabaseSpec>, logger: Logger): Promise<string> => {
+const transpileDatabase: SuggestedTargetObjectHandler = async (obj: APIObject<DatabaseSpec>): Promise<string> => {
     return `CREATE DATABASE IF NOT EXISTS ${obj.spec.name};`
 };
 
+const transpileStruct: SuggestedTargetObjectHandler = async (obj: APIObject<StructSpec>): Promise<string> => {
+    return `CREATE TABLE IF NOT EXISTS ${obj.spec.databaseName}.${obj.spec.name} (__placeholder__ BOOLEAN);`;
+};
+
+const transpileAttribute = async (obj: APIObject<AttributeSpec>, logger: Logger, etcd: APIObjectDatabase): Promise<string> => {
+    const datatypes: APIObject<DataTypeSpec>[] = etcd.kindIndex.datatype || [];
+    if (datatypes.length === 0) {
+      throw new Error('No data types defined.');
+    }
+    let columnString = `ALTER TABLE ${obj.spec.databaseName}.${obj.spec.structName}\r\n`
+      + `ADD COLUMN IF NOT EXISTS ${obj.spec.name} `;
+    const type: string = obj.spec.type.toLowerCase();
+    const matchingTypes: APIObject[] = datatypes
+      .filter((datatype: APIObject): boolean => datatype.metadata.name.toLowerCase() === type);
+    if (matchingTypes.length !== 1) {
+      throw new Error(`Data type '${type}' not recognized.`);
+    }
+    const datatype: APIObject<DataTypeSpec> = matchingTypes[0];
+    columnString += transpileDataType('mariadb', datatype, obj);
+    if (obj.spec.nullable) columnString += ' NULL';
+    else columnString += ' NOT NULL';
+    // Simply quoting the default value is fine, because MariaDB will cast it.
+    if (obj.spec.default) columnString += ` DEFAULT '${obj.spec.default}'`;
+    if (obj.metadata.annotations && obj.metadata.annotations.comment) {
+      columnString += `\r\nCOMMENT '${obj.metadata.annotations.comment}'`;
+    }
+    columnString += ';';
+    if (datatype.spec.targets.mariadb) {
+      if (datatype.spec.targets.mariadb.check) {
+        columnString += '\r\n\r\n';
+        columnString += datatype.spec.targets.mariadb.check
+          .map((expression: string, index: number): string => {
+            const qualifiedTableName: string = `${obj.spec.databaseName}.${obj.spec.structName}`;
+            return `ALTER TABLE ${qualifiedTableName}\r\n`
+            + `DROP CONSTRAINT IF EXISTS preql_valid_${datatype.metadata.name}_${index};\r\n`
+            + `ALTER TABLE ${qualifiedTableName}\r\n`
+            + `ADD CONSTRAINT IF NOT EXISTS preql_valid_${datatype.metadata.name}_${index}\r\n`
+            + `CHECK (${printf(expression, obj)});`;
+          })
+          .join('\r\n\r\n')
+      }
+      if (datatype.spec.targets.mariadb.setters) {
+        columnString += '\r\n\r\n';
+        columnString += datatype.spec.targets.mariadb.setters
+          .map((expression: string, index: number): string => {
+            const qualifiedTableName: string = `${obj.spec.databaseName}.${obj.spec.structName}`;
+            const formattedExpression: string = printf(expression, obj);
+            const triggerBaseName = `${obj.spec.databaseName}.preql_${datatype.metadata.name}_${index}`;
+            return (
+              `DROP TRIGGER IF EXISTS ${triggerBaseName}_insert;\r\n`
+              + `CREATE TRIGGER IF NOT EXISTS ${triggerBaseName}_insert\r\n`
+              + `BEFORE INSERT ON ${qualifiedTableName} FOR EACH ROW\r\n`
+              + `SET NEW.${obj.spec.name} = ${formattedExpression};\r\n`
+              + '\r\n'
+              + `DROP TRIGGER IF EXISTS ${triggerBaseName}_update;\r\n`
+              + `CREATE TRIGGER IF NOT EXISTS ${triggerBaseName}_update\r\n`
+              + `BEFORE UPDATE ON ${qualifiedTableName} FOR EACH ROW\r\n`
+              + `SET NEW.${obj.spec.name} = ${formattedExpression};`
+            );
+          })
+          .join('\r\n\r\n');
+      }
+    }
+    return columnString;
+};
+
+// TODO: Transpile everything individually, then add DROP COLUMN __placeholder__ at the end.
 const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, logger: Logger): Promise<string> => {
-    const transactionTranspilations: string[] = await Promise.all([
-        'database',
-        // 'entity',
-        'struct',
-        // 'attribute',
-        // 'index',
-        'primaryindex',
-        'foreignkeyconstraint',
-        // 'link',
-    ].map(async (kindName: string): Promise<string> => { // Transpile that kind.
-        const objectsOfMatchingKind: APIObject[] | undefined = etcd.kindIndex[kindName];
-        if (!objectsOfMatchingKind) return '';
-        let objectTranspiler: SuggestedTargetObjectHandler;
-        switch (kindName) {
-            case 'database': objectTranspiler = transpileDatabase; break;
-            default: return ''; // REVIEW
+    let transpilations: string[] = [];
+
+    const databases: APIObject[] | undefined = etcd.kindIndex.database;
+    if (!databases) return '';
+    transpilations = await Promise.all(databases.map(
+        async (obj: APIObject): Promise<string> => {
+            return transpileDatabase(obj, logger);
         }
-        const transpilations: string[] = await Promise.all(
-            objectsOfMatchingKind.map(
-                async (obj: APIObject): Promise<string> => {
-                    return objectTranspiler(obj, logger);
-                }
-            )
-        );
-        return transpilations
-            .filter((transpilation: string): boolean => transpilation !== '')
-            .join('\r\n\r\n');
-    }));
+    ));
+
+    const structs: APIObject[] | undefined = etcd.kindIndex.struct;
+    if (!structs) return '';
+    transpilations = transpilations.concat(await Promise.all(structs.map(
+        async (obj: APIObject): Promise<string> => {
+            return transpileStruct(obj, logger);
+        }
+    )));
+
+    const attributes: APIObject[] | undefined = etcd.kindIndex.attribute;
+    if (!attributes) return '';
+    transpilations = transpilations.concat(await Promise.all(attributes.map(
+        async (obj: APIObject): Promise<string> => {
+            return transpileAttribute(obj, logger, etcd);
+        }
+    )));
+
+    // const primaryIndexes: APIObject[] | undefined = etcd.kindIndex.primaryindex;
+    // if (!primaryIndexes) return '';
+    // transpilations = await Promise.all(primaryIndexes.map(
+    //     async (obj: APIObject): Promise<string> => {
+    //         return transpileAttribute(obj, logger, etcd);
+    //     }
+    // ));
+
+    transpilations = transpilations.concat(await Promise.all(structs.map(
+        (struct: APIObject<StructSpec>) => (
+            `ALTER TABLE ${struct.spec.databaseName}.${struct.spec.name} `
+            + 'DROP COLUMN IF EXISTS __placeholder__;'
+        )
+    )));
+
     return 'START TRANSACTION;\r\n\r\n'
         + `${(etcd.kindIndex.database || []).map(dropAllPreqlCheckConstraintsForTableTemplate)}`
         + `${(etcd.kindIndex.struct || [])
             .map((apiObject: APIObject<StructSpec>): string => (
             `CALL ${apiObject.spec.databaseName}`
             + `.dropAllPreqlCheckConstraintsForTable('${apiObject.spec.name}');\r\n\r\n`
+            + `DROP PROCEDURE ${apiObject.spec.databaseName}.dropAllPreqlCheckConstraintsForTable;\r\n\r\n`
             )).join('')}`
-        + `${transactionTranspilations.filter((tt: string) => (tt !== '')).join('\r\n\r\n')}\r\n\r\n`
+        + `${transpilations.filter((t: string) => (t !== '')).join('\r\n\r\n')}\r\n\r\n`
         + 'COMMIT;\r\n';
 };
 

@@ -36,6 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
+var preql_core_1 = require("preql-core");
 // This will break once you upgrade to a higher version of MariaDB.
 // See: https://dataedo.com/kb/query/mariadb/list-check-constraints-in-database
 // https://stackoverflow.com/questions/12637945/how-can-i-delete-all-the-triggers-in-a-mysql-database-using-one-sql-statement
@@ -73,60 +74,140 @@ var dropAllPreqlCheckConstraintsForTableTemplate = function (db) {
         + 'END $$\r\n'
         + 'DELIMITER ;\r\n\r\n';
 };
-var transpileDatabase = function (obj, logger) { return __awaiter(_this, void 0, void 0, function () {
+var transpileDatabase = function (obj) { return __awaiter(_this, void 0, void 0, function () {
     return __generator(this, function (_a) {
         return [2 /*return*/, "CREATE DATABASE IF NOT EXISTS " + obj.spec.name + ";"];
     });
 }); };
-var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0, function () {
-    var transactionTranspilations;
-    var _this = this;
+var transpileStruct = function (obj) { return __awaiter(_this, void 0, void 0, function () {
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, Promise.all([
-                    'database',
-                    // 'entity',
-                    'struct',
-                    // 'attribute',
-                    // 'index',
-                    'primaryindex',
-                    'foreignkeyconstraint',
-                ].map(function (kindName) { return __awaiter(_this, void 0, void 0, function () {
-                    var objectsOfMatchingKind, objectTranspiler, transpilations;
-                    var _this = this;
-                    return __generator(this, function (_a) {
-                        switch (_a.label) {
-                            case 0:
-                                objectsOfMatchingKind = etcd.kindIndex[kindName];
-                                if (!objectsOfMatchingKind)
-                                    return [2 /*return*/, ''];
-                                switch (kindName) {
-                                    case 'database':
-                                        objectTranspiler = transpileDatabase;
-                                        break;
-                                    default: return [2 /*return*/, '']; // REVIEW
-                                }
-                                return [4 /*yield*/, Promise.all(objectsOfMatchingKind.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
-                                        return __generator(this, function (_a) {
-                                            return [2 /*return*/, objectTranspiler(obj, logger)];
-                                        });
-                                    }); }))];
-                            case 1:
-                                transpilations = _a.sent();
-                                return [2 /*return*/, transpilations
-                                        .filter(function (transpilation) { return transpilation !== ''; })
-                                        .join('\r\n\r\n')];
-                        }
-                    });
-                }); }))];
+        return [2 /*return*/, "CREATE TABLE IF NOT EXISTS " + obj.spec.databaseName + "." + obj.spec.name + " (__placeholder__ BOOLEAN);"];
+    });
+}); };
+var transpileAttribute = function (obj, logger, etcd) { return __awaiter(_this, void 0, void 0, function () {
+    var datatypes, columnString, type, matchingTypes, datatype;
+    return __generator(this, function (_a) {
+        datatypes = etcd.kindIndex.datatype || [];
+        if (datatypes.length === 0) {
+            throw new Error('No data types defined.');
+        }
+        columnString = "ALTER TABLE " + obj.spec.databaseName + "." + obj.spec.structName + "\r\n"
+            + ("ADD COLUMN IF NOT EXISTS " + obj.spec.name + " ");
+        type = obj.spec.type.toLowerCase();
+        matchingTypes = datatypes
+            .filter(function (datatype) { return datatype.metadata.name.toLowerCase() === type; });
+        if (matchingTypes.length !== 1) {
+            throw new Error("Data type '" + type + "' not recognized.");
+        }
+        datatype = matchingTypes[0];
+        columnString += preql_core_1.transpileDataType('mariadb', datatype, obj);
+        if (obj.spec.nullable)
+            columnString += ' NULL';
+        else
+            columnString += ' NOT NULL';
+        // Simply quoting the default value is fine, because MariaDB will cast it.
+        if (obj.spec.default)
+            columnString += " DEFAULT '" + obj.spec.default + "'";
+        if (obj.metadata.annotations && obj.metadata.annotations.comment) {
+            columnString += "\r\nCOMMENT '" + obj.metadata.annotations.comment + "'";
+        }
+        columnString += ';';
+        if (datatype.spec.targets.mariadb) {
+            if (datatype.spec.targets.mariadb.check) {
+                columnString += '\r\n\r\n';
+                columnString += datatype.spec.targets.mariadb.check
+                    .map(function (expression, index) {
+                    var qualifiedTableName = obj.spec.databaseName + "." + obj.spec.structName;
+                    return "ALTER TABLE " + qualifiedTableName + "\r\n"
+                        + ("DROP CONSTRAINT IF EXISTS preql_valid_" + datatype.metadata.name + "_" + index + ";\r\n")
+                        + ("ALTER TABLE " + qualifiedTableName + "\r\n")
+                        + ("ADD CONSTRAINT IF NOT EXISTS preql_valid_" + datatype.metadata.name + "_" + index + "\r\n")
+                        + ("CHECK (" + preql_core_1.printf(expression, obj) + ");");
+                })
+                    .join('\r\n\r\n');
+            }
+            if (datatype.spec.targets.mariadb.setters) {
+                columnString += '\r\n\r\n';
+                columnString += datatype.spec.targets.mariadb.setters
+                    .map(function (expression, index) {
+                    var qualifiedTableName = obj.spec.databaseName + "." + obj.spec.structName;
+                    var formattedExpression = preql_core_1.printf(expression, obj);
+                    var triggerBaseName = obj.spec.databaseName + ".preql_" + datatype.metadata.name + "_" + index;
+                    return ("DROP TRIGGER IF EXISTS " + triggerBaseName + "_insert;\r\n"
+                        + ("CREATE TRIGGER IF NOT EXISTS " + triggerBaseName + "_insert\r\n")
+                        + ("BEFORE INSERT ON " + qualifiedTableName + " FOR EACH ROW\r\n")
+                        + ("SET NEW." + obj.spec.name + " = " + formattedExpression + ";\r\n")
+                        + '\r\n'
+                        + ("DROP TRIGGER IF EXISTS " + triggerBaseName + "_update;\r\n")
+                        + ("CREATE TRIGGER IF NOT EXISTS " + triggerBaseName + "_update\r\n")
+                        + ("BEFORE UPDATE ON " + qualifiedTableName + " FOR EACH ROW\r\n")
+                        + ("SET NEW." + obj.spec.name + " = " + formattedExpression + ";"));
+                })
+                    .join('\r\n\r\n');
+            }
+        }
+        return [2 /*return*/, columnString];
+    });
+}); };
+// TODO: Transpile everything individually, then add DROP COLUMN __placeholder__ at the end.
+var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0, function () {
+    var transpilations, databases, structs, _a, _b, attributes, _c, _d, _e, _f;
+    var _this = this;
+    return __generator(this, function (_g) {
+        switch (_g.label) {
+            case 0:
+                transpilations = [];
+                databases = etcd.kindIndex.database;
+                if (!databases)
+                    return [2 /*return*/, ''];
+                return [4 /*yield*/, Promise.all(databases.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
+                        return __generator(this, function (_a) {
+                            return [2 /*return*/, transpileDatabase(obj, logger)];
+                        });
+                    }); }))];
             case 1:
-                transactionTranspilations = _a.sent();
+                transpilations = _g.sent();
+                structs = etcd.kindIndex.struct;
+                if (!structs)
+                    return [2 /*return*/, ''];
+                _b = (_a = transpilations).concat;
+                return [4 /*yield*/, Promise.all(structs.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
+                        return __generator(this, function (_a) {
+                            return [2 /*return*/, transpileStruct(obj, logger)];
+                        });
+                    }); }))];
+            case 2:
+                transpilations = _b.apply(_a, [_g.sent()]);
+                attributes = etcd.kindIndex.attribute;
+                if (!attributes)
+                    return [2 /*return*/, ''];
+                _d = (_c = transpilations).concat;
+                return [4 /*yield*/, Promise.all(attributes.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
+                        return __generator(this, function (_a) {
+                            return [2 /*return*/, transpileAttribute(obj, logger, etcd)];
+                        });
+                    }); }))];
+            case 3:
+                transpilations = _d.apply(_c, [_g.sent()]);
+                _f = (_e = transpilations).concat;
+                return [4 /*yield*/, Promise.all(structs.map(function (struct) { return ("ALTER TABLE " + struct.spec.databaseName + "." + struct.spec.name + " "
+                        + 'DROP COLUMN IF EXISTS __placeholder__;'); }))];
+            case 4:
+                // const primaryIndexes: APIObject[] | undefined = etcd.kindIndex.primaryindex;
+                // if (!primaryIndexes) return '';
+                // transpilations = await Promise.all(primaryIndexes.map(
+                //     async (obj: APIObject): Promise<string> => {
+                //         return transpileAttribute(obj, logger, etcd);
+                //     }
+                // ));
+                transpilations = _f.apply(_e, [_g.sent()]);
                 return [2 /*return*/, 'START TRANSACTION;\r\n\r\n'
                         + ("" + (etcd.kindIndex.database || []).map(dropAllPreqlCheckConstraintsForTableTemplate))
                         + ("" + (etcd.kindIndex.struct || [])
                             .map(function (apiObject) { return ("CALL " + apiObject.spec.databaseName
-                            + (".dropAllPreqlCheckConstraintsForTable('" + apiObject.spec.name + "');\r\n\r\n")); }).join(''))
-                        + (transactionTranspilations.filter(function (tt) { return (tt !== ''); }).join('\r\n\r\n') + "\r\n\r\n")
+                            + (".dropAllPreqlCheckConstraintsForTable('" + apiObject.spec.name + "');\r\n\r\n")
+                            + ("DROP PROCEDURE " + apiObject.spec.databaseName + ".dropAllPreqlCheckConstraintsForTable;\r\n\r\n")); }).join(''))
+                        + (transpilations.filter(function (t) { return (t !== ''); }).join('\r\n\r\n') + "\r\n\r\n")
                         + 'COMMIT;\r\n'];
         }
     });
