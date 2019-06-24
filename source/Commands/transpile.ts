@@ -1,4 +1,16 @@
-import { APIObject, SuggestedTargetIndexHandler, SuggestedTargetObjectHandler, APIObjectDatabase, Logger, DatabaseSpec, StructSpec, AttributeSpec, DataTypeSpec, transpileDataType, printf } from 'preql-core';
+import { APIObject, APIObjectDatabase, DatabaseSpec, Logger, StructSpec, SuggestedTargetIndexHandler } from 'preql-core';
+import transpileAttribute from '../Transpilers/attribute';
+import transpileDatabase from '../Transpilers/database';
+import transpileEntry from '../Transpilers/entry';
+import transpileForeignKeyConstraint from '../Transpilers/foreignkeyconstraint';
+import transpilePlainIndex from '../Transpilers/plainindex';
+import transpilePostamble from '../Transpilers/postamble';
+import transpilePreamble from '../Transpilers/preamble';
+import transpilePrimaryIndex from '../Transpilers/primaryindex';
+import transpileSpatialIndex from '../Transpilers/spatialindex';
+import transpileStruct from '../Transpilers/struct';
+import transpileTextIndex from '../Transpilers/textindex';
+import transpileUniqueIndex from '../Transpilers/uniqueindex';
 
 // This will break once you upgrade to a higher version of MariaDB.
 // See: https://dataedo.com/kb/query/mariadb/list-check-constraints-in-database
@@ -38,111 +50,107 @@ const dropAllPreqlCheckConstraintsForTableTemplate = (db: APIObject<DatabaseSpec
   + 'DELIMITER ;\r\n\r\n';
 };
 
-const transpileDatabase: SuggestedTargetObjectHandler = async (obj: APIObject<DatabaseSpec>): Promise<string> => {
-    return `CREATE DATABASE IF NOT EXISTS ${obj.spec.name};`
-};
-
-const transpileStruct: SuggestedTargetObjectHandler = async (obj: APIObject<StructSpec>): Promise<string> => {
-    return `CREATE TABLE IF NOT EXISTS ${obj.spec.databaseName}.${obj.spec.name} (__placeholder__ BOOLEAN);`;
-};
-
-const transpileAttribute = async (obj: APIObject<AttributeSpec>, logger: Logger, etcd: APIObjectDatabase): Promise<string> => {
-    const datatypes: APIObject<DataTypeSpec>[] = etcd.kindIndex.datatype || [];
-    if (datatypes.length === 0) {
-      throw new Error('No data types defined.');
-    }
-    let columnString = `ALTER TABLE ${obj.spec.databaseName}.${obj.spec.structName}\r\n`
-      + `ADD COLUMN IF NOT EXISTS ${obj.spec.name} `;
-    const type: string = obj.spec.type.toLowerCase();
-    const matchingTypes: APIObject[] = datatypes
-      .filter((datatype: APIObject): boolean => datatype.metadata.name.toLowerCase() === type);
-    if (matchingTypes.length !== 1) {
-      throw new Error(`Data type '${type}' not recognized.`);
-    }
-    const datatype: APIObject<DataTypeSpec> = matchingTypes[0];
-    columnString += transpileDataType('mariadb', datatype, obj);
-    if (obj.spec.nullable) columnString += ' NULL';
-    else columnString += ' NOT NULL';
-    // Simply quoting the default value is fine, because MariaDB will cast it.
-    if (obj.spec.default) columnString += ` DEFAULT '${obj.spec.default}'`;
-    if (obj.metadata.annotations && obj.metadata.annotations.comment) {
-      columnString += `\r\nCOMMENT '${obj.metadata.annotations.comment}'`;
-    }
-    columnString += ';';
-    if (datatype.spec.targets.mariadb) {
-      if (datatype.spec.targets.mariadb.check) {
-        columnString += '\r\n\r\n';
-        columnString += datatype.spec.targets.mariadb.check
-          .map((expression: string, index: number): string => {
-            const qualifiedTableName: string = `${obj.spec.databaseName}.${obj.spec.structName}`;
-            return `ALTER TABLE ${qualifiedTableName}\r\n`
-            + `DROP CONSTRAINT IF EXISTS preql_valid_${datatype.metadata.name}_${index};\r\n`
-            + `ALTER TABLE ${qualifiedTableName}\r\n`
-            + `ADD CONSTRAINT IF NOT EXISTS preql_valid_${datatype.metadata.name}_${index}\r\n`
-            + `CHECK (${printf(expression, obj)});`;
-          })
-          .join('\r\n\r\n')
-      }
-      if (datatype.spec.targets.mariadb.setters) {
-        columnString += '\r\n\r\n';
-        columnString += datatype.spec.targets.mariadb.setters
-          .map((expression: string, index: number): string => {
-            const qualifiedTableName: string = `${obj.spec.databaseName}.${obj.spec.structName}`;
-            const formattedExpression: string = printf(expression, obj);
-            const triggerBaseName = `${obj.spec.databaseName}.preql_${datatype.metadata.name}_${index}`;
-            return (
-              `DROP TRIGGER IF EXISTS ${triggerBaseName}_insert;\r\n`
-              + `CREATE TRIGGER IF NOT EXISTS ${triggerBaseName}_insert\r\n`
-              + `BEFORE INSERT ON ${qualifiedTableName} FOR EACH ROW\r\n`
-              + `SET NEW.${obj.spec.name} = ${formattedExpression};\r\n`
-              + '\r\n'
-              + `DROP TRIGGER IF EXISTS ${triggerBaseName}_update;\r\n`
-              + `CREATE TRIGGER IF NOT EXISTS ${triggerBaseName}_update\r\n`
-              + `BEFORE UPDATE ON ${qualifiedTableName} FOR EACH ROW\r\n`
-              + `SET NEW.${obj.spec.name} = ${formattedExpression};`
-            );
-          })
-          .join('\r\n\r\n');
-      }
-    }
-    return columnString;
-};
-
-// TODO: Transpile everything individually, then add DROP COLUMN __placeholder__ at the end.
 const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, logger: Logger): Promise<string> => {
     let transpilations: string[] = [];
 
+    const preambles: APIObject[] | undefined = etcd.kindIndex.preamble;
+    if (preambles && preambles.length > 0) {
+        transpilations = transpilations.concat(await Promise.all(preambles.map(
+            async (obj: APIObject): Promise<string> => {
+                return transpilePreamble(obj, logger);
+            }
+        )));
+    }
+
     const databases: APIObject[] | undefined = etcd.kindIndex.database;
-    if (!databases) return '';
-    transpilations = await Promise.all(databases.map(
-        async (obj: APIObject): Promise<string> => {
-            return transpileDatabase(obj, logger);
-        }
-    ));
+    if (databases && databases.length > 0) {
+        transpilations = transpilations.concat(await Promise.all(databases.map(
+            async (obj: APIObject): Promise<string> => {
+                return transpileDatabase(obj, logger);
+            }
+        )));
+    }
 
     const structs: APIObject[] | undefined = etcd.kindIndex.struct;
-    if (!structs) return '';
-    transpilations = transpilations.concat(await Promise.all(structs.map(
-        async (obj: APIObject): Promise<string> => {
-            return transpileStruct(obj, logger);
-        }
-    )));
+    if (structs && structs.length > 0) {
+        transpilations = transpilations.concat(await Promise.all(structs.map(
+            async (obj: APIObject): Promise<string> => {
+                return transpileStruct(obj, logger);
+            }
+        )));
+    }
 
     const attributes: APIObject[] | undefined = etcd.kindIndex.attribute;
-    if (!attributes) return '';
-    transpilations = transpilations.concat(await Promise.all(attributes.map(
-        async (obj: APIObject): Promise<string> => {
-            return transpileAttribute(obj, logger, etcd);
-        }
-    )));
+    if (attributes && attributes.length > 0) {
+        transpilations = transpilations.concat(await Promise.all(attributes.map(
+            async (obj: APIObject): Promise<string> => {
+                return transpileAttribute(obj, logger, etcd);
+            }
+        )));
+    }
 
-    // const primaryIndexes: APIObject[] | undefined = etcd.kindIndex.primaryindex;
-    // if (!primaryIndexes) return '';
-    // transpilations = await Promise.all(primaryIndexes.map(
-    //     async (obj: APIObject): Promise<string> => {
-    //         return transpileAttribute(obj, logger, etcd);
-    //     }
-    // ));
+    const primaryindexes: APIObject[] | undefined = etcd.kindIndex.primaryindex;
+    if (primaryindexes && primaryindexes.length > 0) {
+        transpilations = transpilations.concat(await Promise.all(primaryindexes.map(
+            async (obj: APIObject): Promise<string> => {
+                return transpilePrimaryIndex(obj, logger);
+            }
+        )));
+    }
+
+    const plainindexes: APIObject[] | undefined = etcd.kindIndex.plainindex;
+    if (plainindexes && plainindexes.length > 0) {
+        transpilations = transpilations.concat(await Promise.all(plainindexes.map(
+            async (obj: APIObject): Promise<string> => {
+                return transpilePlainIndex(obj, logger);
+            }
+        )));
+    }
+
+    const uniqueindexes: APIObject[] | undefined = etcd.kindIndex.uniqueindex;
+    if (uniqueindexes && uniqueindexes.length > 0) {
+        transpilations = transpilations.concat(await Promise.all(uniqueindexes.map(
+            async (obj: APIObject): Promise<string> => {
+                return transpileUniqueIndex(obj, logger);
+            }
+        )));
+    }
+
+    const textindexes: APIObject[] | undefined = etcd.kindIndex.textindex;
+    if (textindexes && textindexes.length > 0) {
+        transpilations = transpilations.concat(await Promise.all(textindexes.map(
+            async (obj: APIObject): Promise<string> => {
+                return transpileTextIndex(obj, logger);
+            }
+        )));
+    }
+
+    const spatialindexes: APIObject[] | undefined = etcd.kindIndex.spatialindex;
+    if (spatialindexes && spatialindexes.length > 0) {
+        transpilations = transpilations.concat(await Promise.all(spatialindexes.map(
+            async (obj: APIObject): Promise<string> => {
+                return transpileSpatialIndex(obj, logger);
+            }
+        )));
+    }
+
+    const foreignKeyConstraints: APIObject[] | undefined = etcd.kindIndex.foreignkeyconstraint;
+    if (foreignKeyConstraints && foreignKeyConstraints.length > 0) {
+        transpilations = transpilations.concat(await Promise.all(foreignKeyConstraints.map(
+            async (obj: APIObject): Promise<string> => {
+                return transpileForeignKeyConstraint(obj, logger);
+            }
+        )));
+    }
+
+    const entries: APIObject[] | undefined = etcd.kindIndex.entry;
+    if (entries && entries.length > 0) {
+        transpilations = transpilations.concat(await Promise.all(entries.map(
+            async (obj: APIObject): Promise<string> => {
+                return transpileEntry(obj, logger);
+            }
+        )));
+    }
 
     transpilations = transpilations.concat(await Promise.all(structs.map(
         (struct: APIObject<StructSpec>) => (
@@ -151,13 +159,19 @@ const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, l
         )
     )));
 
+    const postambles: APIObject[] | undefined = etcd.kindIndex.postamble;
+    if (postambles && postambles.length !== 0) {
+        transpilations = transpilations.concat(await Promise.all(postambles.map(
+            async (obj: APIObject): Promise<string> => {
+                return transpilePostamble(obj, logger);
+            }
+        )));
+    }
+
     return 'START TRANSACTION;\r\n\r\n'
         + `${(etcd.kindIndex.database || []).map(dropAllPreqlCheckConstraintsForTableTemplate)}`
-        + `${(etcd.kindIndex.struct || [])
-            .map((apiObject: APIObject<StructSpec>): string => (
-            `CALL ${apiObject.spec.databaseName}`
-            + `.dropAllPreqlCheckConstraintsForTable('${apiObject.spec.name}');\r\n\r\n`
-            + `DROP PROCEDURE ${apiObject.spec.databaseName}.dropAllPreqlCheckConstraintsForTable;\r\n\r\n`
+        + `${(etcd.kindIndex.struct || []).map((obj: APIObject<StructSpec>): string => (
+                `CALL ${obj.spec.databaseName}.dropAllPreqlCheckConstraintsForTable('${obj.spec.name}');\r\n\r\n`
             )).join('')}`
         + `${transpilations.filter((t: string) => (t !== '')).join('\r\n\r\n')}\r\n\r\n`
         + 'COMMIT;\r\n';
