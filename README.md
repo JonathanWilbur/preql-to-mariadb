@@ -14,3 +14,21 @@ database dialect of your choice.
 ## What is this Library
 
 This library converts PreQL into MariaDB SQL.
+
+## To Do
+
+- [x] Create database before deleting all triggers in it
+- [x] Make the Server kind set the time zone
+- [x] UPSERT on duplicate primary keys
+- [x] Transpile `CharacterSet`
+  - [x] At `Server` Level
+  - [x] At `Database` Level
+  - [x] At `Struct` Level
+  - [x] At `Attribute` Level
+- [x] Transpile `Collation`
+  - [x] At `Server` Level
+  - [x] At `Database` Level
+  - [x] At `Struct` Level
+  - [x] At `Attribute` Level
+- [ ] Support mutli-valued attributes
+- [ ] Break into smaller transactions

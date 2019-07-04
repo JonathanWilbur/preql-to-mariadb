@@ -1,6 +1,33 @@
 transpileTo: mariadb
 objects:
   - apiVersion: preql/1.0.0
+    kind: CharacterSet
+    metadata:
+      name: utf8
+    spec:
+      name: utf8
+      targetEquivalents:
+        mariadb: utf8
+  - apiVersion: preql/1.0.0
+    kind: Collation
+    metadata:
+      name: utf8ci
+    spec:
+      name: utf8ci
+      targetEquivalents:
+        mariadb: utf8_general_ci
+  - apiVersion: preql/1.0.0
+    kind: Server
+    metadata:
+      name: templedb01
+    spec:
+      name: templedb01
+      protocol: mysql
+      hostname: templedb01
+      starttlsSupported: True
+      characterSet: utf8
+      collation: utf8ci
+  - apiVersion: preql/1.0.0
     kind: DataType
     metadata:
       name: varchar
@@ -9,12 +36,12 @@ objects:
       regexes:
         pcre:
           personName:
-            - pattern: '^[A-Za-z ]+$'
-            - pattern: '.{5,}'
+            - pattern: '^[A-Za-z ]+'
+            - pattern: '.{2,}'
             - pattern: 'Phil Collins'
               positive: False
           robotName:
-            - pattern: '^[0-9]+$'
+            - pattern: '^[0-9]+'
       setters:
         - type: trim
           side: both
@@ -38,7 +65,8 @@ objects:
       name: floofy
     spec:
       name: floofy
-      collation: utf8
+      characterSet: utf8
+      collation: utf8ci
   - apiVersion: preql/1.0.0
     kind: Struct
     metadata:
@@ -46,6 +74,8 @@ objects:
     spec:
       name: person
       databaseName: floofy
+      characterSet: utf8
+      collation: utf8ci
   - apiVersion: preql/1.0.0
     kind: Struct
     metadata:
@@ -73,7 +103,6 @@ objects:
       length: 4
       nullable: False
       default: Bob
-      casing: upper
   - apiVersion: preql/1.0.0
     kind: Attribute
     metadata:
@@ -88,7 +117,8 @@ objects:
       length: 64
       nullable: False
       default: Bob
-      casing: upper
+      characterSet: utf8
+      collation: utf8ci
   - apiVersion: preql/1.0.0
     kind: Attribute
     metadata:
@@ -103,7 +133,6 @@ objects:
       length: 4
       nullable: False
       default: Bob
-      casing: upper
   - apiVersion: preql/1.0.0
     kind: Attribute
     metadata:
@@ -118,7 +147,6 @@ objects:
       length: 64
       nullable: False
       default: McGobb
-      casing: upper
   - apiVersion: preql/1.0.0
     kind: PrimaryIndex
     metadata:
@@ -150,15 +178,15 @@ objects:
         key:
         - attributeName: firstName
         - attributeName: lastName
-  # - apiVersion: preql/1.0.0
-  #   kind: Entry
-  #   metadata:
-  #     name: myself
-  #     labels:
-  #       name: biggay
-  #   spec:
-  #     databaseName: floofy
-  #     structName: person
-  #     values:
-  #       firstName: Jonathan
-  #       lastName: Wilbur
+  - apiVersion: preql/1.0.0
+    kind: Entry
+    metadata:
+      name: myself
+      labels:
+        name: biggay
+    spec:
+      databaseName: floofy
+      structName: person
+      values:
+        firstName: Jonathan
+        lastName: Wilbur

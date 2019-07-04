@@ -36,9 +36,49 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
-var transpileDatabase = function (obj) { return __awaiter(_this, void 0, void 0, function () {
+var transpileDatabase = function (obj, logger, etcd) { return __awaiter(_this, void 0, void 0, function () {
+    var ret, characterSet, mariaDBEquivalent, collation, mariaDBEquivalent;
     return __generator(this, function (_a) {
-        return [2 /*return*/, "CREATE DATABASE IF NOT EXISTS " + obj.spec.name + ";"];
+        ret = "CREATE DATABASE IF NOT EXISTS " + obj.spec.name + ";";
+        if (obj.spec.characterSet) {
+            characterSet = etcd.kindIndex.characterset
+                .find(function (cs) { return obj.spec.characterSet === cs.spec.name; });
+            if (characterSet) {
+                mariaDBEquivalent = characterSet.spec.targetEquivalents.mariadb
+                    || characterSet.spec.targetEquivalents.mysql;
+                if (mariaDBEquivalent) {
+                    ret += "\r\nALTER DATABASE " + obj.spec.name + " DEFAULT CHARACTER SET = '" + mariaDBEquivalent + "';";
+                }
+                else {
+                    logger.warn('No MariaDB or MySQL equivalent character set for PreQL '
+                        + ("character set '" + characterSet.metadata.name + "'."));
+                }
+            }
+            else {
+                logger.error("Expected CharacterSet '" + obj.spec.characterSet + "' did not exist! "
+                    + 'This is a bug in the PreQL Core library.');
+            }
+        }
+        if (obj.spec.collation) {
+            collation = etcd.kindIndex.collation
+                .find(function (c) { return obj.spec.collation === c.spec.name; });
+            if (collation) {
+                mariaDBEquivalent = collation.spec.targetEquivalents.mariadb
+                    || collation.spec.targetEquivalents.mysql;
+                if (mariaDBEquivalent) {
+                    ret += "\r\nALTER DATABASE " + obj.spec.name + " DEFAULT COLLATE = '" + mariaDBEquivalent + "';";
+                }
+                else {
+                    logger.warn('No MariaDB or MySQL equivalent collation for PreQL '
+                        + ("collation '" + collation.metadata.name + "'."));
+                }
+            }
+            else {
+                logger.error("Expected Collation '" + obj.spec.characterSet + "' did not exist! "
+                    + 'This is a bug in the PreQL Core library.');
+            }
+        }
+        return [2 /*return*/, ret];
     });
 }); };
 exports.default = transpileDatabase;

@@ -38,7 +38,7 @@ var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var preql_core_1 = require("preql-core");
 var transpileAttribute = function (obj, logger, etcd) { return __awaiter(_this, void 0, void 0, function () {
-    var datatypes, columnString, type, matchingTypes, datatype, checkRegexps_1, constraintBaseName, qualifiedTableName, qualifiedTableName, previousExpression_1, triggerBaseName;
+    var datatypes, columnString, type, matchingTypes, datatype, characterSet, mariaDBEquivalent, collation, mariaDBEquivalent, checkRegexps_1, constraintBaseName, qualifiedTableName, qualifiedTableName, previousExpression_1, triggerBaseName;
     return __generator(this, function (_a) {
         datatypes = etcd.kindIndex.datatype || [];
         if (datatypes.length === 0) {
@@ -54,6 +54,44 @@ var transpileAttribute = function (obj, logger, etcd) { return __awaiter(_this, 
         }
         datatype = matchingTypes[0];
         columnString += preql_core_1.transpileDataType('mariadb', datatype, obj);
+        if (obj.spec.characterSet) {
+            characterSet = etcd.kindIndex.characterset
+                .find(function (cs) { return obj.spec.characterSet === cs.spec.name; });
+            if (characterSet) {
+                mariaDBEquivalent = characterSet.spec.targetEquivalents.mariadb
+                    || characterSet.spec.targetEquivalents.mysql;
+                if (mariaDBEquivalent) {
+                    columnString += " CHARACTER SET '" + mariaDBEquivalent + "'";
+                }
+                else {
+                    logger.warn('No MariaDB or MySQL equivalent character set for PreQL '
+                        + ("character set '" + characterSet.metadata.name + "'."));
+                }
+            }
+            else {
+                logger.error("Expected CharacterSet '" + obj.spec.characterSet + "' did not exist! "
+                    + 'This is a bug in the PreQL Core library.');
+            }
+        }
+        if (obj.spec.collation) {
+            collation = etcd.kindIndex.collation
+                .find(function (c) { return obj.spec.collation === c.spec.name; });
+            if (collation) {
+                mariaDBEquivalent = collation.spec.targetEquivalents.mariadb
+                    || collation.spec.targetEquivalents.mysql;
+                if (mariaDBEquivalent) {
+                    columnString += " COLLATE '" + mariaDBEquivalent + "'";
+                }
+                else {
+                    logger.warn('No MariaDB or MySQL equivalent collation for PreQL '
+                        + ("collation '" + collation.metadata.name + "'."));
+                }
+            }
+            else {
+                logger.error("Expected Collation '" + obj.spec.characterSet + "' did not exist! "
+                    + 'This is a bug in the PreQL Core library.');
+            }
+        }
         if (obj.spec.nullable)
             columnString += ' NULL';
         else
@@ -114,7 +152,9 @@ var transpileAttribute = function (obj, logger, etcd) { return __awaiter(_this, 
                             break;
                         }
                         case ('replace'): {
-                            previousExpression_1 = "REPLACE(" + previousExpression_1 + ", " + setter.from + ", " + setter.to + ")";
+                            var from = setter.from.replace("'", "''").replace('\\', '\\\\');
+                            var to = setter.to.replace("'", "''").replace('\\', '\\\\');
+                            previousExpression_1 = "REPLACE(" + previousExpression_1 + ", " + from + ", " + to + ")";
                             break;
                         }
                         case ('case'): {

@@ -11,6 +11,7 @@ import transpileSpatialIndex from '../Transpilers/spatialindex';
 import transpileStruct from '../Transpilers/struct';
 import transpileTextIndex from '../Transpilers/textindex';
 import transpileUniqueIndex from '../Transpilers/uniqueindex';
+import transpileServer from '../Transpilers/server';
 
 // This will break once you upgrade to a higher version of MariaDB.
 // See: https://dataedo.com/kb/query/mariadb/list-check-constraints-in-database
@@ -50,6 +51,10 @@ const dropAllPreqlCheckConstraintsForTableTemplate = (db: APIObject<DatabaseSpec
   + 'DELIMITER ;\r\n\r\n';
 };
 
+const callDropAllPreqlCheckConstraintsForTableTemplate = (struct: APIObject<StructSpec>): string => {
+    return `CALL ${struct.spec.databaseName}.dropAllPreqlCheckConstraintsForTable('${struct.spec.name}');`;
+};
+
 const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, logger: Logger): Promise<string> => {
     let transpilations: string[] = [];
 
@@ -62,20 +67,40 @@ const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, l
         )));
     }
 
+    const servers: APIObject[] | undefined = etcd.kindIndex.server;
+    if (servers && servers.length > 0) {
+        transpilations = transpilations.concat(await Promise.all(servers.map(
+            async (obj: APIObject): Promise<string> => {
+                return transpileServer(obj, logger, etcd);
+            }
+        )));
+    }
+
     const databases: APIObject[] | undefined = etcd.kindIndex.database;
     if (databases && databases.length > 0) {
         transpilations = transpilations.concat(await Promise.all(databases.map(
             async (obj: APIObject): Promise<string> => {
-                return transpileDatabase(obj, logger);
+                return transpileDatabase(obj, logger, etcd);
             }
         )));
+        transpilations = transpilations.concat(await Promise.all(databases.map(
+            async (obj: APIObject<DatabaseSpec>): Promise<string> => {
+                return dropAllPreqlCheckConstraintsForTableTemplate(obj);
+            }))
+        );
     }
 
     const structs: APIObject[] | undefined = etcd.kindIndex.struct;
     if (structs && structs.length > 0) {
         transpilations = transpilations.concat(await Promise.all(structs.map(
             async (obj: APIObject): Promise<string> => {
-                return transpileStruct(obj, logger);
+                return transpileStruct(obj, logger, etcd);
+            }
+        )));
+
+        transpilations = transpilations.concat(await Promise.all(structs.map(
+            async (obj: APIObject): Promise<string> => {
+                return callDropAllPreqlCheckConstraintsForTableTemplate(obj);
             }
         )));
     }
@@ -169,10 +194,10 @@ const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, l
     }
 
     return 'START TRANSACTION;\r\n\r\n'
-        + `${(etcd.kindIndex.database || []).map(dropAllPreqlCheckConstraintsForTableTemplate)}`
-        + `${(etcd.kindIndex.struct || []).map((obj: APIObject<StructSpec>): string => (
-                `CALL ${obj.spec.databaseName}.dropAllPreqlCheckConstraintsForTable('${obj.spec.name}');\r\n\r\n`
-            )).join('')}`
+        // + `${(etcd.kindIndex.database || []).map(dropAllPreqlCheckConstraintsForTableTemplate)}`
+        // + `${(etcd.kindIndex.struct || []).map((obj: APIObject<StructSpec>): string => (
+        //         `CALL ${obj.spec.databaseName}.dropAllPreqlCheckConstraintsForTable('${obj.spec.name}');\r\n\r\n`
+        //     )).join('')}`
         + `${transpilations.filter((t: string) => (t !== '')).join('\r\n\r\n')}\r\n\r\n`
         + 'COMMIT;\r\n';
 };

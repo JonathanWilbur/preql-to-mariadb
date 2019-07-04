@@ -36,10 +36,18 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
-var transpileStruct = function (obj, logger, etcd) { return __awaiter(_this, void 0, void 0, function () {
-    var ret, characterSet, mariaDBEquivalent, collation, mariaDBEquivalent;
+var tz_offset_1 = require("tz-offset");
+var transpileServer = function (obj, logger, etcd) { return __awaiter(_this, void 0, void 0, function () {
+    var ret, offsetInMinutes, offsetHourString, offsetMinuteString, offsetString, characterSet, mariaDBEquivalent, collation, mariaDBEquivalent;
     return __generator(this, function (_a) {
-        ret = "CREATE TABLE IF NOT EXISTS " + obj.spec.databaseName + "." + obj.spec.name + " (__placeholder__ BOOLEAN);";
+        ret = "DELIMITER $$\r\nIF @@hostname = '" + obj.spec.hostname + "' OR @@logical_server_name = '" + obj.spec.name + "' THEN\r\n\tDO 0;\r\n";
+        if (obj.spec.timezone) {
+            offsetInMinutes = tz_offset_1.offsetOf(obj.spec.timezone);
+            offsetHourString = Math.floor(Math.abs(offsetInMinutes) / 60).toString().padStart(2, '0');
+            offsetMinuteString = (Math.abs(offsetInMinutes) % 60).toString().padStart(2, '0');
+            offsetString = "" + (offsetInMinutes < 0 ? '-' : '') + offsetHourString + ":" + offsetMinuteString;
+            ret += "\tSET @@time_zone = '" + offsetString + "';\r\n";
+        }
         if (obj.spec.characterSet) {
             characterSet = etcd.kindIndex.characterset
                 .find(function (cs) { return obj.spec.characterSet === cs.spec.name; });
@@ -47,7 +55,8 @@ var transpileStruct = function (obj, logger, etcd) { return __awaiter(_this, voi
                 mariaDBEquivalent = characterSet.spec.targetEquivalents.mariadb
                     || characterSet.spec.targetEquivalents.mysql;
                 if (mariaDBEquivalent) {
-                    ret += "\r\nALTER TABLE " + obj.spec.databaseName + "." + obj.spec.name + " DEFAULT CHARACTER SET = '" + mariaDBEquivalent + "';";
+                    ret += "\tSET @@character_set_server = '" + mariaDBEquivalent + "';\r\n";
+                    ret += "\tSET @@character_set_database = '" + mariaDBEquivalent + "';\r\n";
                 }
                 else {
                     logger.warn('No MariaDB or MySQL equivalent character set for PreQL '
@@ -66,7 +75,8 @@ var transpileStruct = function (obj, logger, etcd) { return __awaiter(_this, voi
                 mariaDBEquivalent = collation.spec.targetEquivalents.mariadb
                     || collation.spec.targetEquivalents.mysql;
                 if (mariaDBEquivalent) {
-                    ret += "\r\nALTER TABLE " + obj.spec.databaseName + "." + obj.spec.name + " DEFAULT COLLATE = '" + mariaDBEquivalent + "';";
+                    ret += "\tSET @@collation_server = '" + mariaDBEquivalent + "';\r\n";
+                    ret += "\tSET @@collation_database = '" + mariaDBEquivalent + "';\r\n";
                 }
                 else {
                     logger.warn('No MariaDB or MySQL equivalent collation for PreQL '
@@ -78,7 +88,8 @@ var transpileStruct = function (obj, logger, etcd) { return __awaiter(_this, voi
                     + 'This is a bug in the PreQL Core library.');
             }
         }
+        ret += 'END IF;\r\nDELIMITER ;';
         return [2 /*return*/, ret];
     });
 }); };
-exports.default = transpileStruct;
+exports.default = transpileServer;

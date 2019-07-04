@@ -1,7 +1,16 @@
-import { APIObject, DatabaseSpec, Logger, APIObjectDatabase, CharacterSetSpec, CollationSpec } from 'preql-core';
+import { APIObject, ServerSpec, Logger, APIObjectDatabase, CharacterSetSpec, CollationSpec } from 'preql-core';
+import { offsetOf, Timezone } from 'tz-offset';
 
-const transpileDatabase = async (obj: APIObject<DatabaseSpec>, logger: Logger, etcd: APIObjectDatabase): Promise<string> => {
-    let ret: string = `CREATE DATABASE IF NOT EXISTS ${obj.spec.name};`;
+const transpileServer = async (obj: APIObject<ServerSpec>, logger: Logger, etcd: APIObjectDatabase): Promise<string> => {
+    let ret = `DELIMITER $$\r\nIF @@hostname = '${obj.spec.hostname}' OR @@logical_server_name = '${obj.spec.name}' THEN\r\n\tDO 0;\r\n`;
+
+    if (obj.spec.timezone) {
+        const offsetInMinutes: number = offsetOf(obj.spec.timezone as Timezone);
+        const offsetHourString: string = Math.floor(Math.abs(offsetInMinutes) / 60).toString().padStart(2, '0');
+        const offsetMinuteString: string = (Math.abs(offsetInMinutes) % 60).toString().padStart(2, '0');
+        const offsetString: string = `${offsetInMinutes < 0 ? '-' : ''}${offsetHourString}:${offsetMinuteString}`;
+        ret += `\tSET @@time_zone = '${offsetString}';\r\n`;
+    }
 
     if (obj.spec.characterSet) {
         const characterSet: APIObject<CharacterSetSpec> | undefined = etcd.kindIndex.characterset
@@ -11,7 +20,8 @@ const transpileDatabase = async (obj: APIObject<DatabaseSpec>, logger: Logger, e
                 characterSet.spec.targetEquivalents.mariadb
                 || characterSet.spec.targetEquivalents.mysql;
             if (mariaDBEquivalent) {
-                ret += `\r\nALTER DATABASE ${obj.spec.name} DEFAULT CHARACTER SET = '${mariaDBEquivalent}';`;
+                ret += `\tSET @@character_set_server = '${mariaDBEquivalent}';\r\n`;
+                ret += `\tSET @@character_set_database = '${mariaDBEquivalent}';\r\n`;
             } else {
                 logger.warn(
                     'No MariaDB or MySQL equivalent character set for PreQL '
@@ -34,7 +44,8 @@ const transpileDatabase = async (obj: APIObject<DatabaseSpec>, logger: Logger, e
                 collation.spec.targetEquivalents.mariadb
                 || collation.spec.targetEquivalents.mysql;
             if (mariaDBEquivalent) {
-                ret += `\r\nALTER DATABASE ${obj.spec.name} DEFAULT COLLATE = '${mariaDBEquivalent}';`;
+                ret += `\tSET @@collation_server = '${mariaDBEquivalent}';\r\n`;
+                ret += `\tSET @@collation_database = '${mariaDBEquivalent}';\r\n`;
             } else {
                 logger.warn(
                     'No MariaDB or MySQL equivalent collation for PreQL '
@@ -48,7 +59,9 @@ const transpileDatabase = async (obj: APIObject<DatabaseSpec>, logger: Logger, e
             );
         }
     }
+
+    ret += 'END IF;\r\nDELIMITER ;';
     return ret;
 };
 
-export default transpileDatabase;
+export default transpileServer;

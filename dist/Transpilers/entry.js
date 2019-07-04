@@ -52,7 +52,20 @@ var transpileEntry = function (obj) { return __awaiter(_this, void 0, void 0, fu
                     }
                 })
                     .join(',\r\n\t')
-                + '\r\n;')];
+                + '\r\nON DUPLICATE KEY UPDATE\r\n\t'
+                + Object.entries(obj.spec.values)
+                    .map(function (kv) {
+                    var key = kv[0];
+                    var value = kv[1];
+                    switch (typeof key) {
+                        case 'boolean': return key + " = " + (value ? 'TRUE' : 'FALSE');
+                        case 'number': return key + " = " + value;
+                        case 'string': return key + " = '" + value + "'";
+                        default: throw new Error("Invalid data type for entry field '" + key + "'.");
+                    }
+                })
+                    .join(',\r\n\t')
+                + ';\r\n')];
     });
 }); };
 exports.default = transpileEntry;
