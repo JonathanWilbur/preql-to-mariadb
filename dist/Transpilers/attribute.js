@@ -38,13 +38,23 @@ var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var preql_core_1 = require("preql-core");
 var transpileAttribute = function (obj, logger, etcd) { return __awaiter(_this, void 0, void 0, function () {
-    var datatypes, columnString, type, matchingTypes, datatype, characterSet, mariaDBEquivalent, collation, mariaDBEquivalent, checkRegexps_1, constraintBaseName, qualifiedTableName, qualifiedTableName, previousExpression_1, triggerBaseName;
+    var datatypes, tableName, columnString, type, matchingTypes, datatype, characterSet, mariaDBEquivalent, collation, mariaDBEquivalent, checkRegexps_1, constraintBaseName, qualifiedTableName, qualifiedTableName, previousExpression_1, triggerBaseName;
     return __generator(this, function (_a) {
         datatypes = etcd.kindIndex.datatype || [];
         if (datatypes.length === 0) {
             throw new Error('No data types defined.');
         }
-        columnString = "ALTER TABLE " + obj.spec.databaseName + "." + obj.spec.structName + "\r\n"
+        tableName = obj.spec.multiValued ?
+            obj.spec.structName + "_" + obj.spec.name
+            : obj.spec.structName;
+        columnString = '';
+        if (obj.spec.multiValued) {
+            columnString = ("CREATE TABLE IF NOT EXISTS " + obj.spec.databaseName + "." + tableName + " (\r\n"
+                + ("\t" + obj.spec.structName + "_id BIGINT UNSIGNED NOT NULL,\r\n")
+                + ("\tFOREIGN KEY (" + obj.spec.structName + "_id) REFERENCES " + obj.spec.structName + " (id)\r\n")
+                + ');\r\n');
+        }
+        columnString += "ALTER TABLE " + obj.spec.databaseName + "." + tableName + "\r\n"
             + ("ADD COLUMN IF NOT EXISTS " + obj.spec.name + " ");
         type = obj.spec.type.toLowerCase();
         matchingTypes = datatypes
@@ -92,7 +102,7 @@ var transpileAttribute = function (obj, logger, etcd) { return __awaiter(_this, 
                     + 'This is a bug in the PreQL Core library.');
             }
         }
-        if (obj.spec.nullable)
+        if (obj.spec.nullable && (!obj.spec.multiValued))
             columnString += ' NULL';
         else
             columnString += ' NOT NULL';
@@ -106,7 +116,7 @@ var transpileAttribute = function (obj, logger, etcd) { return __awaiter(_this, 
         if (datatype.spec.targets.mariadb) {
             if (datatype.spec.regexes && datatype.spec.regexes.pcre) {
                 checkRegexps_1 = [];
-                constraintBaseName = obj.spec.databaseName + "." + obj.spec.structName + ".preql_" + obj.spec.name;
+                constraintBaseName = obj.spec.databaseName + "." + tableName + ".preql_" + obj.spec.name;
                 // Every regex within a group must match.
                 Object.entries(datatype.spec.regexes.pcre).forEach(function (group) {
                     var groupRegexps = [];
@@ -117,7 +127,7 @@ var transpileAttribute = function (obj, logger, etcd) { return __awaiter(_this, 
                     });
                     checkRegexps_1.push("(" + groupRegexps.join(' AND ') + ")");
                 });
-                qualifiedTableName = obj.spec.databaseName + "." + obj.spec.structName;
+                qualifiedTableName = obj.spec.databaseName + "." + tableName;
                 columnString += ("\r\nALTER TABLE " + qualifiedTableName + "\r\n"
                     + ("DROP CONSTRAINT IF EXISTS " + constraintBaseName + ";\r\n")
                     + ("ALTER TABLE " + qualifiedTableName + "\r\n")
@@ -125,9 +135,9 @@ var transpileAttribute = function (obj, logger, etcd) { return __awaiter(_this, 
                     + ("CHECK (" + checkRegexps_1.join(' OR ') + ");"));
             }
             if (datatype.spec.setters) {
-                qualifiedTableName = obj.spec.databaseName + "." + obj.spec.structName;
+                qualifiedTableName = obj.spec.databaseName + "." + tableName;
                 previousExpression_1 = "NEW." + obj.spec.name;
-                triggerBaseName = obj.spec.databaseName + ".preql_" + obj.spec.structName + "_" + obj.spec.name;
+                triggerBaseName = obj.spec.databaseName + ".preql_" + tableName + "_" + obj.spec.name;
                 datatype.spec.setters.forEach(function (setter, index) {
                     switch (setter.type.toLowerCase()) {
                         case ('trim'): {

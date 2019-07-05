@@ -1,11 +1,27 @@
 import { APIObject, APIObjectDatabase, AttributeSpec, DataTypeSpec, Logger, transpileDataType, CharacterSetSpec, CollationSpec } from 'preql-core';
 
 const transpileAttribute = async (obj: APIObject<AttributeSpec>, logger: Logger, etcd: APIObjectDatabase): Promise<string> => {
+
     const datatypes: APIObject<DataTypeSpec>[] = etcd.kindIndex.datatype || [];
     if (datatypes.length === 0) {
       throw new Error('No data types defined.');
     }
-    let columnString = `ALTER TABLE ${obj.spec.databaseName}.${obj.spec.structName}\r\n`
+
+    const tableName: string = obj.spec.multiValued ?
+      `${obj.spec.structName}_${obj.spec.name}`
+      : obj.spec.structName;
+
+    let columnString: string = '';
+    if (obj.spec.multiValued) {
+      columnString = (
+        `CREATE TABLE IF NOT EXISTS ${obj.spec.databaseName}.${tableName} (\r\n`
+        + `\t${obj.spec.structName}_id BIGINT UNSIGNED NOT NULL,\r\n`
+        + `\tFOREIGN KEY (${obj.spec.structName}_id) REFERENCES ${obj.spec.structName} (id)\r\n`
+        + ');\r\n'
+      );
+    }
+
+    columnString += `ALTER TABLE ${obj.spec.databaseName}.${tableName}\r\n`
       + `ADD COLUMN IF NOT EXISTS ${obj.spec.name} `;
     const type: string = obj.spec.type.toLowerCase();
     const matchingTypes: APIObject[] = datatypes
@@ -62,7 +78,7 @@ const transpileAttribute = async (obj: APIObject<AttributeSpec>, logger: Logger,
       }
     }
 
-    if (obj.spec.nullable) columnString += ' NULL';
+    if (obj.spec.nullable && (!obj.spec.multiValued)) columnString += ' NULL';
     else columnString += ' NOT NULL';
     // Simply quoting the default value is fine, because MariaDB will cast it.
     if (obj.spec.default) columnString += ` DEFAULT '${obj.spec.default}'`;
@@ -74,7 +90,7 @@ const transpileAttribute = async (obj: APIObject<AttributeSpec>, logger: Logger,
 
       if (datatype.spec.regexes && datatype.spec.regexes.pcre) {
         const checkRegexps: string[] = [];
-        const constraintBaseName = `${obj.spec.databaseName}.${obj.spec.structName}.preql_${obj.spec.name}`;
+        const constraintBaseName = `${obj.spec.databaseName}.${tableName}.preql_${obj.spec.name}`;
         // Every regex within a group must match.
         Object.entries(datatype.spec.regexes.pcre).forEach((group): void => {
           const groupRegexps: string[] = [];
@@ -84,7 +100,7 @@ const transpileAttribute = async (obj: APIObject<AttributeSpec>, logger: Logger,
           });
           checkRegexps.push(`(${groupRegexps.join(' AND ')})`);
         });
-        const qualifiedTableName: string = `${obj.spec.databaseName}.${obj.spec.structName}`;
+        const qualifiedTableName: string = `${obj.spec.databaseName}.${tableName}`;
         columnString += (
           `\r\nALTER TABLE ${qualifiedTableName}\r\n`
           + `DROP CONSTRAINT IF EXISTS ${constraintBaseName};\r\n`
@@ -95,9 +111,9 @@ const transpileAttribute = async (obj: APIObject<AttributeSpec>, logger: Logger,
       }
 
       if (datatype.spec.setters) {
-        const qualifiedTableName: string = `${obj.spec.databaseName}.${obj.spec.structName}`;
+        const qualifiedTableName: string = `${obj.spec.databaseName}.${tableName}`;
         let previousExpression: string = `NEW.${obj.spec.name}`;
-        const triggerBaseName = `${obj.spec.databaseName}.preql_${obj.spec.structName}_${obj.spec.name}`;
+        const triggerBaseName = `${obj.spec.databaseName}.preql_${tableName}_${obj.spec.name}`;
         datatype.spec.setters.forEach((setter, index): void => {
           switch (setter.type.toLowerCase()) {
             case ('trim'): {

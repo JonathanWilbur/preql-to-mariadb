@@ -92,6 +92,18 @@ objects:
   - apiVersion: preql/1.0.0
     kind: Attribute
     metadata:
+      name: memberOfGroup
+    spec:
+      name: memberOfGroup
+      structName: person
+      databaseName: floofy
+      type: varchar
+      length: 64
+      nullable: True
+      multiValued: True
+  - apiVersion: preql/1.0.0
+    kind: Attribute
+    metadata:
       name: ownerFirstName
       annotations:
         comment: "Should not be abbreviated"

@@ -22,10 +22,7 @@ This library converts PreQL into MariaDB SQL.
 - [x] UPSERT on duplicate primary keys
 - [x] Transpile `CharacterSet`
 - [x] Transpile `Collation`
-- [ ] Support multi-valued attributes
-  - [ ] Find the `PrimaryKey` used by `structName`
-  - [ ] Query all matching columns from that primary key
-  - [ ] Create a new table with all of those columns and the attribute itself, with a FKC.
+- [x] Support multi-valued attributes
 - [ ] Add explanatory comments
 - [ ] Warn on unrecognized types.
 - [ ] Resize columns?
