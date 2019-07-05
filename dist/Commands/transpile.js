@@ -42,11 +42,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var attribute_1 = __importDefault(require("../Transpilers/attribute"));
 var database_1 = __importDefault(require("../Transpilers/database"));
 var entry_1 = __importDefault(require("../Transpilers/entry"));
-var foreignkeyconstraint_1 = __importDefault(require("../Transpilers/foreignkeyconstraint"));
+var foreignkey_1 = __importDefault(require("../Transpilers/foreignkey"));
 var plainindex_1 = __importDefault(require("../Transpilers/plainindex"));
 var postamble_1 = __importDefault(require("../Transpilers/postamble"));
 var preamble_1 = __importDefault(require("../Transpilers/preamble"));
-var primaryindex_1 = __importDefault(require("../Transpilers/primaryindex"));
 var spatialindex_1 = __importDefault(require("../Transpilers/spatialindex"));
 var struct_1 = __importDefault(require("../Transpilers/struct"));
 var textindex_1 = __importDefault(require("../Transpilers/textindex"));
@@ -87,16 +86,16 @@ var dropAllPreqlCheckConstraintsForTableTemplate = function (db) {
         + '\tEND LOOP;\r\n'
         + '\tCLOSE dropCur;\r\n'
         + 'END $$\r\n'
-        + 'DELIMITER ;\r\n\r\n';
+        + 'DELIMITER ;';
 };
 var callDropAllPreqlCheckConstraintsForTableTemplate = function (struct) {
     return "CALL " + struct.spec.databaseName + ".dropAllPreqlCheckConstraintsForTable('" + struct.spec.name + "');";
 };
 var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0, function () {
-    var transpilations, preambles, _a, _b, servers, _c, _d, databases, _e, _f, _g, _h, structs, _j, _k, _l, _m, attributes, _o, _p, primaryindexes, _q, _r, plainindexes, _s, _t, uniqueindexes, _u, _v, textindexes, _w, _x, spatialindexes, _y, _z, foreignKeyConstraints, _0, _1, entries, _2, _3, _4, _5, postambles, _6, _7;
+    var transpilations, preambles, _a, _b, servers, _c, _d, databases, _e, _f, _g, _h, structs, _j, _k, _l, _m, attributes, _o, _p, plainindexes, _q, _r, uniqueindexes, _s, _t, textindexes, _u, _v, spatialindexes, _w, _x, foreignKeys, _y, _z, entries, _0, _1, postambles, _2, _3;
     var _this = this;
-    return __generator(this, function (_8) {
-        switch (_8.label) {
+    return __generator(this, function (_4) {
+        switch (_4.label) {
             case 0:
                 transpilations = [];
                 preambles = etcd.kindIndex.preamble;
@@ -108,8 +107,8 @@ var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0
                         });
                     }); }))];
             case 1:
-                transpilations = _b.apply(_a, [_8.sent()]);
-                _8.label = 2;
+                transpilations = _b.apply(_a, [_4.sent()]);
+                _4.label = 2;
             case 2:
                 servers = etcd.kindIndex.server;
                 if (!(servers && servers.length > 0)) return [3 /*break*/, 4];
@@ -120,8 +119,8 @@ var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0
                         });
                     }); }))];
             case 3:
-                transpilations = _d.apply(_c, [_8.sent()]);
-                _8.label = 4;
+                transpilations = _d.apply(_c, [_4.sent()]);
+                _4.label = 4;
             case 4:
                 databases = etcd.kindIndex.database;
                 if (!(databases && databases.length > 0)) return [3 /*break*/, 7];
@@ -132,7 +131,7 @@ var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0
                         });
                     }); }))];
             case 5:
-                transpilations = _f.apply(_e, [_8.sent()]);
+                transpilations = _f.apply(_e, [_4.sent()]);
                 _h = (_g = transpilations).concat;
                 return [4 /*yield*/, Promise.all(databases.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
@@ -140,8 +139,8 @@ var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0
                         });
                     }); }))];
             case 6:
-                transpilations = _h.apply(_g, [_8.sent()]);
-                _8.label = 7;
+                transpilations = _h.apply(_g, [_4.sent()]);
+                _4.label = 7;
             case 7:
                 structs = etcd.kindIndex.struct;
                 if (!(structs && structs.length > 0)) return [3 /*break*/, 10];
@@ -152,7 +151,7 @@ var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0
                         });
                     }); }))];
             case 8:
-                transpilations = _k.apply(_j, [_8.sent()]);
+                transpilations = _k.apply(_j, [_4.sent()]);
                 _m = (_l = transpilations).concat;
                 return [4 /*yield*/, Promise.all(structs.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
@@ -160,8 +159,8 @@ var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0
                         });
                     }); }))];
             case 9:
-                transpilations = _m.apply(_l, [_8.sent()]);
-                _8.label = 10;
+                transpilations = _m.apply(_l, [_4.sent()]);
+                _4.label = 10;
             case 10:
                 attributes = etcd.kindIndex.attribute;
                 if (!(attributes && attributes.length > 0)) return [3 /*break*/, 12];
@@ -172,114 +171,93 @@ var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0
                         });
                     }); }))];
             case 11:
-                transpilations = _p.apply(_o, [_8.sent()]);
-                _8.label = 12;
+                transpilations = _p.apply(_o, [_4.sent()]);
+                _4.label = 12;
             case 12:
-                primaryindexes = etcd.kindIndex.primaryindex;
-                if (!(primaryindexes && primaryindexes.length > 0)) return [3 /*break*/, 14];
-                _r = (_q = transpilations).concat;
-                return [4 /*yield*/, Promise.all(primaryindexes.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
-                        return __generator(this, function (_a) {
-                            return [2 /*return*/, primaryindex_1.default(obj, logger)];
-                        });
-                    }); }))];
-            case 13:
-                transpilations = _r.apply(_q, [_8.sent()]);
-                _8.label = 14;
-            case 14:
                 plainindexes = etcd.kindIndex.plainindex;
-                if (!(plainindexes && plainindexes.length > 0)) return [3 /*break*/, 16];
-                _t = (_s = transpilations).concat;
+                if (!(plainindexes && plainindexes.length > 0)) return [3 /*break*/, 14];
+                _r = (_q = transpilations).concat;
                 return [4 /*yield*/, Promise.all(plainindexes.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             return [2 /*return*/, plainindex_1.default(obj, logger)];
                         });
                     }); }))];
-            case 15:
-                transpilations = _t.apply(_s, [_8.sent()]);
-                _8.label = 16;
-            case 16:
+            case 13:
+                transpilations = _r.apply(_q, [_4.sent()]);
+                _4.label = 14;
+            case 14:
                 uniqueindexes = etcd.kindIndex.uniqueindex;
-                if (!(uniqueindexes && uniqueindexes.length > 0)) return [3 /*break*/, 18];
-                _v = (_u = transpilations).concat;
+                if (!(uniqueindexes && uniqueindexes.length > 0)) return [3 /*break*/, 16];
+                _t = (_s = transpilations).concat;
                 return [4 /*yield*/, Promise.all(uniqueindexes.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             return [2 /*return*/, uniqueindex_1.default(obj, logger)];
                         });
                     }); }))];
-            case 17:
-                transpilations = _v.apply(_u, [_8.sent()]);
-                _8.label = 18;
-            case 18:
+            case 15:
+                transpilations = _t.apply(_s, [_4.sent()]);
+                _4.label = 16;
+            case 16:
                 textindexes = etcd.kindIndex.textindex;
-                if (!(textindexes && textindexes.length > 0)) return [3 /*break*/, 20];
-                _x = (_w = transpilations).concat;
+                if (!(textindexes && textindexes.length > 0)) return [3 /*break*/, 18];
+                _v = (_u = transpilations).concat;
                 return [4 /*yield*/, Promise.all(textindexes.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             return [2 /*return*/, textindex_1.default(obj, logger)];
                         });
                     }); }))];
-            case 19:
-                transpilations = _x.apply(_w, [_8.sent()]);
-                _8.label = 20;
-            case 20:
+            case 17:
+                transpilations = _v.apply(_u, [_4.sent()]);
+                _4.label = 18;
+            case 18:
                 spatialindexes = etcd.kindIndex.spatialindex;
-                if (!(spatialindexes && spatialindexes.length > 0)) return [3 /*break*/, 22];
-                _z = (_y = transpilations).concat;
+                if (!(spatialindexes && spatialindexes.length > 0)) return [3 /*break*/, 20];
+                _x = (_w = transpilations).concat;
                 return [4 /*yield*/, Promise.all(spatialindexes.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             return [2 /*return*/, spatialindex_1.default(obj, logger)];
                         });
                     }); }))];
-            case 21:
-                transpilations = _z.apply(_y, [_8.sent()]);
-                _8.label = 22;
-            case 22:
-                foreignKeyConstraints = etcd.kindIndex.foreignkeyconstraint;
-                if (!(foreignKeyConstraints && foreignKeyConstraints.length > 0)) return [3 /*break*/, 24];
-                _1 = (_0 = transpilations).concat;
-                return [4 /*yield*/, Promise.all(foreignKeyConstraints.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
+            case 19:
+                transpilations = _x.apply(_w, [_4.sent()]);
+                _4.label = 20;
+            case 20:
+                foreignKeys = etcd.kindIndex.foreignkey;
+                if (!(foreignKeys && foreignKeys.length > 0)) return [3 /*break*/, 22];
+                _z = (_y = transpilations).concat;
+                return [4 /*yield*/, Promise.all(foreignKeys.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
-                            return [2 /*return*/, foreignkeyconstraint_1.default(obj, logger)];
+                            return [2 /*return*/, foreignkey_1.default(obj, logger)];
                         });
                     }); }))];
-            case 23:
-                transpilations = _1.apply(_0, [_8.sent()]);
-                _8.label = 24;
-            case 24:
+            case 21:
+                transpilations = _z.apply(_y, [_4.sent()]);
+                _4.label = 22;
+            case 22:
                 entries = etcd.kindIndex.entry;
-                if (!(entries && entries.length > 0)) return [3 /*break*/, 26];
-                _3 = (_2 = transpilations).concat;
+                if (!(entries && entries.length > 0)) return [3 /*break*/, 24];
+                _1 = (_0 = transpilations).concat;
                 return [4 /*yield*/, Promise.all(entries.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             return [2 /*return*/, entry_1.default(obj, logger)];
                         });
                     }); }))];
-            case 25:
-                transpilations = _3.apply(_2, [_8.sent()]);
-                _8.label = 26;
-            case 26:
-                _5 = (_4 = transpilations).concat;
-                return [4 /*yield*/, Promise.all(structs.map(function (struct) { return ("ALTER TABLE " + struct.spec.databaseName + "." + struct.spec.name + " "
-                        + 'DROP COLUMN IF EXISTS __placeholder__;'); }))];
-            case 27:
-                transpilations = _5.apply(_4, [_8.sent()]);
+            case 23:
+                transpilations = _1.apply(_0, [_4.sent()]);
+                _4.label = 24;
+            case 24:
                 postambles = etcd.kindIndex.postamble;
-                if (!(postambles && postambles.length !== 0)) return [3 /*break*/, 29];
-                _7 = (_6 = transpilations).concat;
+                if (!(postambles && postambles.length !== 0)) return [3 /*break*/, 26];
+                _3 = (_2 = transpilations).concat;
                 return [4 /*yield*/, Promise.all(postambles.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             return [2 /*return*/, postamble_1.default(obj, logger)];
                         });
                     }); }))];
-            case 28:
-                transpilations = _7.apply(_6, [_8.sent()]);
-                _8.label = 29;
-            case 29: return [2 /*return*/, 'START TRANSACTION;\r\n\r\n'
-                    // + `${(etcd.kindIndex.database || []).map(dropAllPreqlCheckConstraintsForTableTemplate)}`
-                    // + `${(etcd.kindIndex.struct || []).map((obj: APIObject<StructSpec>): string => (
-                    //         `CALL ${obj.spec.databaseName}.dropAllPreqlCheckConstraintsForTable('${obj.spec.name}');\r\n\r\n`
-                    //     )).join('')}`
+            case 25:
+                transpilations = _3.apply(_2, [_4.sent()]);
+                _4.label = 26;
+            case 26: return [2 /*return*/, 'START TRANSACTION;\r\n\r\n'
                     + (transpilations.filter(function (t) { return (t !== ''); }).join('\r\n\r\n') + "\r\n\r\n")
                     + 'COMMIT;\r\n'];
         }

@@ -100,7 +100,7 @@ objects:
       structName: pet
       databaseName: floofy
       type: varchar
-      length: 4
+      length: 64
       nullable: False
       default: Bob
   - apiVersion: preql/1.0.0
@@ -130,7 +130,7 @@ objects:
       structName: person
       databaseName: floofy
       type: varchar
-      length: 4
+      length: 64
       nullable: False
       default: Bob
   - apiVersion: preql/1.0.0
@@ -148,36 +148,15 @@ objects:
       nullable: False
       default: McGobb
   - apiVersion: preql/1.0.0
-    kind: PrimaryIndex
-    metadata:
-      name: important
-      annotations:
-        comment: "Ogres are like onions."
-    spec:
-      name: important
-      structName: person
-      databaseName: floofy
-      keyColumns:
-      - name: firstName
-        ascending: True
-      - name: lastName
-  - apiVersion: preql/1.0.0
-    kind: ForeignKeyConstraint
+    kind: ForeignKey
     metadata:
       name: owner
     spec:
-      name: fk_something
       databaseName: floofy
-      child:
-        struct: pet
-        key:
-        - attributeName: ownerFirstName
-        - attributeName: ownerLastName
-      parent:
-        struct: person
-        key:
-        - attributeName: firstName
-        - attributeName: lastName
+      parentStruct: person
+      childStruct: pet
+      attributeName: owner
+      nullable: True
   - apiVersion: preql/1.0.0
     kind: Entry
     metadata:

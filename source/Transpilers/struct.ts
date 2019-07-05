@@ -1,7 +1,11 @@
 import { APIObject, StructSpec, Logger, APIObjectDatabase, CharacterSetSpec, CollationSpec } from 'preql-core';
 
 const transpileStruct = async (obj: APIObject<StructSpec>, logger: Logger, etcd: APIObjectDatabase): Promise<string> => {
-    let ret: string = `CREATE TABLE IF NOT EXISTS ${obj.spec.databaseName}.${obj.spec.name} (__placeholder__ BOOLEAN);`;
+    let ret: string =
+        `CREATE TABLE IF NOT EXISTS ${obj.spec.databaseName}.${obj.spec.name} `
+        + '(id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY);\r\n'
+        + `ALTER TABLE ${obj.spec.databaseName}.${obj.spec.name} `
+        + `ADD COLUMN IF NOT EXISTS id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY;`;
 
     if (obj.spec.characterSet) {
         const characterSet: APIObject<CharacterSetSpec> | undefined = etcd.kindIndex.characterset

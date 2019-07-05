@@ -39,7 +39,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var transpileStruct = function (obj, logger, etcd) { return __awaiter(_this, void 0, void 0, function () {
     var ret, characterSet, mariaDBEquivalent, collation, mariaDBEquivalent;
     return __generator(this, function (_a) {
-        ret = "CREATE TABLE IF NOT EXISTS " + obj.spec.databaseName + "." + obj.spec.name + " (__placeholder__ BOOLEAN);";
+        ret = "CREATE TABLE IF NOT EXISTS " + obj.spec.databaseName + "." + obj.spec.name + " "
+            + '(id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY);\r\n'
+            + ("ALTER TABLE " + obj.spec.databaseName + "." + obj.spec.name + " ")
+            + "ADD COLUMN IF NOT EXISTS id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY;";
         if (obj.spec.characterSet) {
             characterSet = etcd.kindIndex.characterset
                 .find(function (cs) { return obj.spec.characterSet === cs.spec.name; });

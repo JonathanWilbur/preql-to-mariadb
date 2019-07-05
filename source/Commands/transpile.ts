@@ -2,11 +2,10 @@ import { APIObject, APIObjectDatabase, DatabaseSpec, Logger, StructSpec, Suggest
 import transpileAttribute from '../Transpilers/attribute';
 import transpileDatabase from '../Transpilers/database';
 import transpileEntry from '../Transpilers/entry';
-import transpileForeignKeyConstraint from '../Transpilers/foreignkeyconstraint';
+import transpileForeignKey from '../Transpilers/foreignkey';
 import transpilePlainIndex from '../Transpilers/plainindex';
 import transpilePostamble from '../Transpilers/postamble';
 import transpilePreamble from '../Transpilers/preamble';
-import transpilePrimaryIndex from '../Transpilers/primaryindex';
 import transpileSpatialIndex from '../Transpilers/spatialindex';
 import transpileStruct from '../Transpilers/struct';
 import transpileTextIndex from '../Transpilers/textindex';
@@ -48,7 +47,7 @@ const dropAllPreqlCheckConstraintsForTableTemplate = (db: APIObject<DatabaseSpec
   + '\tEND LOOP;\r\n'
   + '\tCLOSE dropCur;\r\n'
   + 'END $$\r\n'
-  + 'DELIMITER ;\r\n\r\n';
+  + 'DELIMITER ;';
 };
 
 const callDropAllPreqlCheckConstraintsForTableTemplate = (struct: APIObject<StructSpec>): string => {
@@ -114,15 +113,6 @@ const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, l
         )));
     }
 
-    const primaryindexes: APIObject[] | undefined = etcd.kindIndex.primaryindex;
-    if (primaryindexes && primaryindexes.length > 0) {
-        transpilations = transpilations.concat(await Promise.all(primaryindexes.map(
-            async (obj: APIObject): Promise<string> => {
-                return transpilePrimaryIndex(obj, logger);
-            }
-        )));
-    }
-
     const plainindexes: APIObject[] | undefined = etcd.kindIndex.plainindex;
     if (plainindexes && plainindexes.length > 0) {
         transpilations = transpilations.concat(await Promise.all(plainindexes.map(
@@ -159,11 +149,11 @@ const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, l
         )));
     }
 
-    const foreignKeyConstraints: APIObject[] | undefined = etcd.kindIndex.foreignkeyconstraint;
-    if (foreignKeyConstraints && foreignKeyConstraints.length > 0) {
-        transpilations = transpilations.concat(await Promise.all(foreignKeyConstraints.map(
+    const foreignKeys: APIObject[] | undefined = etcd.kindIndex.foreignkey;
+    if (foreignKeys && foreignKeys.length > 0) {
+        transpilations = transpilations.concat(await Promise.all(foreignKeys.map(
             async (obj: APIObject): Promise<string> => {
-                return transpileForeignKeyConstraint(obj, logger);
+                return transpileForeignKey(obj, logger);
             }
         )));
     }
@@ -177,13 +167,6 @@ const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, l
         )));
     }
 
-    transpilations = transpilations.concat(await Promise.all(structs.map(
-        (struct: APIObject<StructSpec>) => (
-            `ALTER TABLE ${struct.spec.databaseName}.${struct.spec.name} `
-            + 'DROP COLUMN IF EXISTS __placeholder__;'
-        )
-    )));
-
     const postambles: APIObject[] | undefined = etcd.kindIndex.postamble;
     if (postambles && postambles.length !== 0) {
         transpilations = transpilations.concat(await Promise.all(postambles.map(
@@ -194,10 +177,6 @@ const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, l
     }
 
     return 'START TRANSACTION;\r\n\r\n'
-        // + `${(etcd.kindIndex.database || []).map(dropAllPreqlCheckConstraintsForTableTemplate)}`
-        // + `${(etcd.kindIndex.struct || []).map((obj: APIObject<StructSpec>): string => (
-        //         `CALL ${obj.spec.databaseName}.dropAllPreqlCheckConstraintsForTable('${obj.spec.name}');\r\n\r\n`
-        //     )).join('')}`
         + `${transpilations.filter((t: string) => (t !== '')).join('\r\n\r\n')}\r\n\r\n`
         + 'COMMIT;\r\n';
 };

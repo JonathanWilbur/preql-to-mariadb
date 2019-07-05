@@ -21,14 +21,11 @@ This library converts PreQL into MariaDB SQL.
 - [x] Make the Server kind set the time zone
 - [x] UPSERT on duplicate primary keys
 - [x] Transpile `CharacterSet`
-  - [x] At `Server` Level
-  - [x] At `Database` Level
-  - [x] At `Struct` Level
-  - [x] At `Attribute` Level
 - [x] Transpile `Collation`
-  - [x] At `Server` Level
-  - [x] At `Database` Level
-  - [x] At `Struct` Level
-  - [x] At `Attribute` Level
-- [ ] Support mutli-valued attributes
-- [ ] Break into smaller transactions
+- [ ] Support multi-valued attributes
+  - [ ] Find the `PrimaryKey` used by `structName`
+  - [ ] Query all matching columns from that primary key
+  - [ ] Create a new table with all of those columns and the attribute itself, with a FKC.
+- [ ] Add explanatory comments
+- [ ] Warn on unrecognized types.
+- [ ] Resize columns?
