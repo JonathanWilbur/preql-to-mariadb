@@ -4,6 +4,7 @@ const transpileEntry = async (obj: APIObject<EntrySpec>): Promise<string> => {
     return (
         `INSERT INTO ${obj.spec.databaseName}.${obj.spec.structName}\r\n`
         + 'SET\r\n\t'
+        + `id = ${obj.spec.id},\r\n\t`
         + Object.entries(obj.spec.values)
             .map((kv: [string, string | number | boolean ]): string => {
                 const key: string = kv[0];

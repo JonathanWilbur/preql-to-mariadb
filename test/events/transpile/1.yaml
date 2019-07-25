@@ -199,6 +199,7 @@ objects:
     spec:
       databaseName: floofy
       structName: person
+      id: 14
       values:
         firstName: Jonathan
         lastName: Wilbur

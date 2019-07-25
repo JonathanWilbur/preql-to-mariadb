@@ -24,7 +24,7 @@ const transpileAttribute = async (obj: APIObject<AttributeSpec>, logger: Logger,
     columnString += `ALTER TABLE ${obj.spec.databaseName}.${tableName}\r\n`
       + `ADD COLUMN IF NOT EXISTS \`${obj.spec.name}\` `;
     if (datatype.spec.values) {
-      const maxLengthValue: number = datatype.spec.values.sort((a, b) => (a.length - b.length))[0].length;
+      const maxLengthValue: number = datatype.spec.values.sort((a, b) => (b.length - a.length))[0].length;
       columnString += `CHAR(${maxLengthValue})`;
     } else {
       columnString += transpileDataType('mariadb', datatype, obj);

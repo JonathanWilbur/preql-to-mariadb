@@ -59,7 +59,7 @@ var transpileAttribute = function (obj, logger, etcd) { return __awaiter(_this, 
         columnString += "ALTER TABLE " + obj.spec.databaseName + "." + tableName + "\r\n"
             + ("ADD COLUMN IF NOT EXISTS `" + obj.spec.name + "` ");
         if (datatype.spec.values) {
-            maxLengthValue = datatype.spec.values.sort(function (a, b) { return (a.length - b.length); })[0].length;
+            maxLengthValue = datatype.spec.values.sort(function (a, b) { return (b.length - a.length); })[0].length;
             columnString += "CHAR(" + maxLengthValue + ")";
         }
         else {

@@ -40,6 +40,7 @@ var transpileEntry = function (obj) { return __awaiter(_this, void 0, void 0, fu
     return __generator(this, function (_a) {
         return [2 /*return*/, ("INSERT INTO " + obj.spec.databaseName + "." + obj.spec.structName + "\r\n"
                 + 'SET\r\n\t'
+                + ("id = " + obj.spec.id + ",\r\n\t")
                 + Object.entries(obj.spec.values)
                     .map(function (kv) {
                     var key = kv[0];
