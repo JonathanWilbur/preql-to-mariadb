@@ -1,6 +1,6 @@
-import { APIObject, EntrySpec, SuggestedTargetObjectHandler } from 'preql-core';
+import { APIObject, EntrySpec } from 'preql-core';
 
-const transpileEntry: SuggestedTargetObjectHandler = async (obj: APIObject<EntrySpec>): Promise<string> => {
+const transpileEntry = async (obj: APIObject<EntrySpec>): Promise<string> => {
     return (
         `INSERT INTO ${obj.spec.databaseName}.${obj.spec.structName}\r\n`
         + 'SET\r\n\t'

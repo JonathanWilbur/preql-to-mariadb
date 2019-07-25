@@ -38,12 +38,8 @@ var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var preql_core_1 = require("preql-core");
 var transpileAttribute = function (obj, logger, etcd) { return __awaiter(_this, void 0, void 0, function () {
-    var datatypes, tableName, columnString, type, matchingTypes, datatype, characterSet, mariaDBEquivalent, collation, mariaDBEquivalent, checkRegexps_1, constraintBaseName, qualifiedTableName, qualifiedTableName, previousExpression_1, triggerBaseName;
+    var tableName, columnString, type, datatype, maxLengthValue, characterSet, mariaDBEquivalent, collation, mariaDBEquivalent, storedProcedureName, foreignKeyName, enumTableName_1, maxLengthValue, checkRegexps_1, constraintBaseName, qualifiedTableName, qualifiedTableName, previousExpression_1, triggerBaseName;
     return __generator(this, function (_a) {
-        datatypes = etcd.kindIndex.datatype || [];
-        if (datatypes.length === 0) {
-            throw new Error('No data types defined.');
-        }
         tableName = obj.spec.multiValued ?
             obj.spec.structName + "_" + obj.spec.name
             : obj.spec.structName;
@@ -54,16 +50,21 @@ var transpileAttribute = function (obj, logger, etcd) { return __awaiter(_this, 
                 + ("\tFOREIGN KEY (" + obj.spec.structName + "_id) REFERENCES " + obj.spec.structName + " (id)\r\n")
                 + ');\r\n');
         }
-        columnString += "ALTER TABLE " + obj.spec.databaseName + "." + tableName + "\r\n"
-            + ("ADD COLUMN IF NOT EXISTS " + obj.spec.name + " ");
         type = obj.spec.type.toLowerCase();
-        matchingTypes = datatypes
-            .filter(function (datatype) { return datatype.metadata.name.toLowerCase() === type; });
-        if (matchingTypes.length !== 1) {
+        datatype = (etcd.kindIndex.datatype || [])
+            .find(function (datatype) { return datatype.metadata.name.toLowerCase() === type; });
+        if (!datatype) {
             throw new Error("Data type '" + type + "' not recognized.");
         }
-        datatype = matchingTypes[0];
-        columnString += preql_core_1.transpileDataType('mariadb', datatype, obj);
+        columnString += "ALTER TABLE " + obj.spec.databaseName + "." + tableName + "\r\n"
+            + ("ADD COLUMN IF NOT EXISTS `" + obj.spec.name + "` ");
+        if (datatype.spec.values) {
+            maxLengthValue = datatype.spec.values.sort(function (a, b) { return (a.length - b.length); })[0].length;
+            columnString += "CHAR(" + maxLengthValue + ")";
+        }
+        else {
+            columnString += preql_core_1.transpileDataType('mariadb', datatype, obj);
+        }
         if (obj.spec.characterSet) {
             characterSet = etcd.kindIndex.characterset
                 .find(function (cs) { return obj.spec.characterSet === cs.spec.name; });
@@ -113,99 +114,129 @@ var transpileAttribute = function (obj, logger, etcd) { return __awaiter(_this, 
             columnString += "\r\nCOMMENT '" + obj.metadata.annotations.comment + "'";
         }
         columnString += ';';
-        if (datatype.spec.targets.mariadb) {
-            if (datatype.spec.regexes && datatype.spec.regexes.pcre) {
-                checkRegexps_1 = [];
-                constraintBaseName = obj.spec.databaseName + "." + tableName + ".preql_" + obj.spec.name;
-                // Every regex within a group must match.
-                Object.entries(datatype.spec.regexes.pcre).forEach(function (group) {
-                    var groupRegexps = [];
-                    if (!(datatype.spec.regexes))
-                        return; // Just to make TypeScript happy.
-                    Object.entries(datatype.spec.regexes.pcre[group[0]]).forEach(function (re) {
-                        groupRegexps.push(obj.spec.name + " " + (re[1].positive ? '' : 'NOT') + " REGEXP '" + re[1].pattern.replace("'", "''") + "'");
-                    });
-                    checkRegexps_1.push("(" + groupRegexps.join(' AND ') + ")");
+        if (datatype.spec.values) {
+            columnString += '\r\n';
+            storedProcedureName = obj.spec.databaseName + ".add_enum_" + datatype.spec.name;
+            foreignKeyName = "enum_" + obj.spec.structName + "_" + obj.spec.name;
+            enumTableName_1 = datatype.spec.name + "_enum";
+            maxLengthValue = datatype.spec.values.sort(function (a, b) { return (b.length - a.length); })[0].length;
+            // Add Enum Table
+            columnString += ("CREATE TABLE IF NOT EXISTS " + obj.spec.databaseName + "." + enumTableName_1 + " (\r\n"
+                + ("\tvalue CHAR(" + maxLengthValue + ") NOT NULL PRIMARY KEY\r\n")
+                + ');\r\n');
+            // Insert Enum Values
+            columnString += ("INSERT IGNORE INTO " + obj.spec.databaseName + "." + enumTableName_1 + " VALUES\r\n"
+                + datatype.spec.values
+                    .map(function (v, i) { return "\t/* " + obj.spec.databaseName + "." + enumTableName_1 + "[" + i + "] */ ('" + v + "')"; })
+                    .join(',\r\n')
+                + '\r\n;\r\n');
+            // Add FKC
+            columnString += ("DROP PROCEDURE IF EXISTS " + storedProcedureName + ";\r\n"
+                + 'DELIMITER $$\r\n'
+                + ("CREATE PROCEDURE IF NOT EXISTS " + storedProcedureName + " ()\r\n")
+                + 'BEGIN\r\n'
+                + '\tDECLARE EXIT HANDLER FOR 1005 DO 0;\r\n'
+                + ("\tALTER TABLE " + obj.spec.databaseName + "." + obj.spec.structName + "\r\n")
+                + ("\tADD CONSTRAINT " + foreignKeyName + " FOREIGN KEY\r\n")
+                + ("\tIF NOT EXISTS " + foreignKeyName + "_index (`" + obj.spec.name + "`)\r\n")
+                + ("\tREFERENCES " + enumTableName_1 + " (value);\r\n")
+                + 'END $$\r\n'
+                + 'DELIMITER ;\r\n'
+                + ("CALL " + storedProcedureName + ";\r\n")
+                + ("DROP PROCEDURE IF EXISTS " + storedProcedureName + ";"));
+            return [2 /*return*/, columnString];
+        }
+        if (datatype.spec.regexes && datatype.spec.regexes.pcre) {
+            checkRegexps_1 = [];
+            constraintBaseName = obj.spec.databaseName + "." + tableName + ".preql_" + obj.spec.name;
+            // Every regex within a group must match.
+            Object.entries(datatype.spec.regexes.pcre).forEach(function (group) {
+                var groupRegexps = [];
+                if (!(datatype.spec.regexes))
+                    return; // Just to make TypeScript happy.
+                Object.entries(datatype.spec.regexes.pcre[group[0]]).forEach(function (re) {
+                    groupRegexps.push(obj.spec.name + " " + (re[1].positive ? '' : 'NOT') + " REGEXP '" + re[1].pattern.replace("'", "''") + "'");
                 });
-                qualifiedTableName = obj.spec.databaseName + "." + tableName;
-                columnString += ("\r\nALTER TABLE " + qualifiedTableName + "\r\n"
-                    + ("DROP CONSTRAINT IF EXISTS " + constraintBaseName + ";\r\n")
-                    + ("ALTER TABLE " + qualifiedTableName + "\r\n")
-                    + ("ADD CONSTRAINT IF NOT EXISTS " + constraintBaseName + "\r\n")
-                    + ("CHECK (" + checkRegexps_1.join(' OR ') + ");"));
-            }
-            if (datatype.spec.setters) {
-                qualifiedTableName = obj.spec.databaseName + "." + tableName;
-                previousExpression_1 = "NEW." + obj.spec.name;
-                triggerBaseName = obj.spec.databaseName + ".preql_" + tableName + "_" + obj.spec.name;
-                datatype.spec.setters.forEach(function (setter, index) {
-                    switch (setter.type.toLowerCase()) {
-                        case ('trim'): {
-                            previousExpression_1 = (function () {
-                                if (!(setter.side))
-                                    return "TRIM(" + previousExpression_1 + ")";
-                                if (setter.side.toLowerCase() === 'left')
-                                    return "LTRIM(" + previousExpression_1 + ")";
-                                if (setter.side.toLowerCase() === 'right')
-                                    return "RTRIM(" + previousExpression_1 + ")";
+                checkRegexps_1.push("(" + groupRegexps.join(' AND ') + ")");
+            });
+            qualifiedTableName = obj.spec.databaseName + "." + tableName;
+            columnString += ("\r\nALTER TABLE " + qualifiedTableName + "\r\n"
+                + ("DROP CONSTRAINT IF EXISTS " + constraintBaseName + ";\r\n")
+                + ("ALTER TABLE " + qualifiedTableName + "\r\n")
+                + ("ADD CONSTRAINT IF NOT EXISTS " + constraintBaseName + "\r\n")
+                + ("CHECK (" + checkRegexps_1.join(' OR ') + ");"));
+        }
+        if (datatype.spec.setters) {
+            qualifiedTableName = obj.spec.databaseName + "." + tableName;
+            previousExpression_1 = "NEW." + obj.spec.name;
+            triggerBaseName = obj.spec.databaseName + ".preql_" + tableName + "_" + obj.spec.name;
+            datatype.spec.setters.forEach(function (setter, index) {
+                switch (setter.type.toLowerCase()) {
+                    case ('trim'): {
+                        previousExpression_1 = (function () {
+                            if (!(setter.side))
                                 return "TRIM(" + previousExpression_1 + ")";
-                            })();
-                            break;
-                        }
-                        case ('substring'): {
-                            if (setter.toIndex) {
-                                previousExpression_1 = "SUBSTRING(" + previousExpression_1 + ", " + (setter.fromIndex + 1) + ", " + (setter.toIndex + 1) + ")";
-                            }
-                            else {
-                                previousExpression_1 = "SUBSTRING(" + previousExpression_1 + ", " + (setter.fromIndex + 1) + ")";
-                            }
-                            break;
-                        }
-                        case ('replace'): {
-                            var from = setter.from.replace("'", "''").replace('\\', '\\\\');
-                            var to = setter.to.replace("'", "''").replace('\\', '\\\\');
-                            previousExpression_1 = "REPLACE(" + previousExpression_1 + ", " + from + ", " + to + ")";
-                            break;
-                        }
-                        case ('case'): {
-                            switch (setter.casing) {
-                                case ('upper'):
-                                    previousExpression_1 = "UPPER(" + previousExpression_1 + ")";
-                                    break;
-                                case ('lower'):
-                                    previousExpression_1 = "LOWER(" + previousExpression_1 + ")";
-                                    break;
-                            }
-                            break;
-                        }
-                        case ('pad'): {
-                            var padString = setter.padString.replace("'", "''").replace('\\', '\\\\');
-                            switch (setter.side) {
-                                case ('left'): {
-                                    previousExpression_1 = "LPAD(" + previousExpression_1 + ", " + setter.padLength + ", " + padString + ")";
-                                    break;
-                                }
-                                case ('right'): {
-                                    previousExpression_1 = "RPAD(" + previousExpression_1 + ", " + setter.padLength + ", '" + padString + "')";
-                                    break;
-                                }
-                            }
-                            break;
-                        }
-                        case ('now'):
-                            previousExpression_1 = "NOW()";
-                            break;
+                            if (setter.side.toLowerCase() === 'left')
+                                return "LTRIM(" + previousExpression_1 + ")";
+                            if (setter.side.toLowerCase() === 'right')
+                                return "RTRIM(" + previousExpression_1 + ")";
+                            return "TRIM(" + previousExpression_1 + ")";
+                        })();
+                        break;
                     }
-                });
-                columnString += ("\r\nDROP TRIGGER IF EXISTS " + triggerBaseName + "_insert;\r\n"
-                    + ("CREATE TRIGGER IF NOT EXISTS " + triggerBaseName + "_insert\r\n")
-                    + ("BEFORE INSERT ON " + qualifiedTableName + " FOR EACH ROW\r\n")
-                    + ("SET NEW." + obj.spec.name + " = " + previousExpression_1 + ";\r\n")
-                    + ("DROP TRIGGER IF EXISTS " + triggerBaseName + "_update;\r\n")
-                    + ("CREATE TRIGGER IF NOT EXISTS " + triggerBaseName + "_update\r\n")
-                    + ("BEFORE UPDATE ON " + qualifiedTableName + " FOR EACH ROW\r\n")
-                    + ("SET NEW." + obj.spec.name + " = " + previousExpression_1 + ";"));
-            }
+                    case ('substring'): {
+                        if (setter.toIndex) {
+                            previousExpression_1 = "SUBSTRING(" + previousExpression_1 + ", " + (setter.fromIndex + 1) + ", " + (setter.toIndex + 1) + ")";
+                        }
+                        else {
+                            previousExpression_1 = "SUBSTRING(" + previousExpression_1 + ", " + (setter.fromIndex + 1) + ")";
+                        }
+                        break;
+                    }
+                    case ('replace'): {
+                        var from = setter.from.replace("'", "''").replace('\\', '\\\\');
+                        var to = setter.to.replace("'", "''").replace('\\', '\\\\');
+                        previousExpression_1 = "REPLACE(" + previousExpression_1 + ", " + from + ", " + to + ")";
+                        break;
+                    }
+                    case ('case'): {
+                        switch (setter.casing) {
+                            case ('upper'):
+                                previousExpression_1 = "UPPER(" + previousExpression_1 + ")";
+                                break;
+                            case ('lower'):
+                                previousExpression_1 = "LOWER(" + previousExpression_1 + ")";
+                                break;
+                        }
+                        break;
+                    }
+                    case ('pad'): {
+                        var padString = setter.padString.replace("'", "''").replace('\\', '\\\\');
+                        switch (setter.side) {
+                            case ('left'): {
+                                previousExpression_1 = "LPAD(" + previousExpression_1 + ", " + setter.padLength + ", " + padString + ")";
+                                break;
+                            }
+                            case ('right'): {
+                                previousExpression_1 = "RPAD(" + previousExpression_1 + ", " + setter.padLength + ", '" + padString + "')";
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                    case ('now'):
+                        previousExpression_1 = "NOW()";
+                        break;
+                }
+            });
+            columnString += ("\r\nDROP TRIGGER IF EXISTS " + triggerBaseName + "_insert;\r\n"
+                + ("CREATE TRIGGER IF NOT EXISTS " + triggerBaseName + "_insert\r\n")
+                + ("BEFORE INSERT ON " + qualifiedTableName + " FOR EACH ROW\r\n")
+                + ("SET NEW." + obj.spec.name + " = " + previousExpression_1 + ";\r\n")
+                + ("DROP TRIGGER IF EXISTS " + triggerBaseName + "_update;\r\n")
+                + ("CREATE TRIGGER IF NOT EXISTS " + triggerBaseName + "_update\r\n")
+                + ("BEFORE UPDATE ON " + qualifiedTableName + " FOR EACH ROW\r\n")
+                + ("SET NEW." + obj.spec.name + " = " + previousExpression_1 + ";"));
         }
         return [2 /*return*/, columnString];
     });

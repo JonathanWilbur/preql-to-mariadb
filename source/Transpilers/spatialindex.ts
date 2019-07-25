@@ -1,11 +1,11 @@
-import { APIObject, SpatialIndexSpec, SuggestedTargetObjectHandler } from 'preql-core';
+import { APIObject, SpatialIndexSpec } from 'preql-core';
 
-const transpileSpatialIndex: SuggestedTargetObjectHandler = async (obj: APIObject<SpatialIndexSpec>): Promise<string> => {
+const transpileSpatialIndex = async (obj: APIObject<SpatialIndexSpec>): Promise<string> => {
     const schemaName: string = obj.spec.databaseName;
     const tableName: string = obj.spec.structName;
     const indexName: string = obj.spec.name;
     const storedProcedureName: string = `create_index_${indexName}`;
-    const columnString: string = obj.spec.keyColumns
+    const columnString: string = obj.spec.keyAttributes
         .map((key): string => `${key.name} ${(key.ascending ? 'ASC' : 'DESC')}`)
         .join(', ');
     return (

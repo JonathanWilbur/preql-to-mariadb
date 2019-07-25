@@ -39,7 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var transpilePlainIndex = function (obj) { return __awaiter(_this, void 0, void 0, function () {
     var columnString;
     return __generator(this, function (_a) {
-        columnString = obj.spec.keyColumns
+        columnString = obj.spec.keyAttributes
             .map(function (key) { return key.name + " " + (key.ascending ? 'ASC' : 'DESC'); })
             .join(', ');
         return [2 /*return*/, ("ALTER TABLE " + obj.spec.databaseName + "." + obj.spec.structName + "\r\n"

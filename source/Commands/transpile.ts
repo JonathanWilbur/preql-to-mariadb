@@ -1,4 +1,4 @@
-import { APIObject, APIObjectDatabase, DatabaseSpec, Logger, StructSpec, SuggestedTargetIndexHandler } from 'preql-core';
+import { APIObject, APIObjectDatabase, DatabaseSpec, Logger, StructSpec } from 'preql-core';
 import transpileAttribute from '../Transpilers/attribute';
 import transpileDatabase from '../Transpilers/database';
 import transpileEntry from '../Transpilers/entry';
@@ -54,14 +54,14 @@ const callDropAllPreqlCheckConstraintsForTableTemplate = (struct: APIObject<Stru
     return `CALL ${struct.spec.databaseName}.dropAllPreqlCheckConstraintsForTable('${struct.spec.name}');`;
 };
 
-const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, logger: Logger): Promise<string> => {
+const transpile = async (etcd: APIObjectDatabase, logger: Logger): Promise<string> => {
     let transpilations: string[] = [];
 
     const preambles: APIObject[] | undefined = etcd.kindIndex.preamble;
     if (preambles && preambles.length > 0) {
         transpilations = transpilations.concat(await Promise.all(preambles.map(
             async (obj: APIObject): Promise<string> => {
-                return transpilePreamble(obj, logger);
+                return transpilePreamble(obj);
             }
         )));
     }
@@ -117,7 +117,7 @@ const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, l
     if (plainindexes && plainindexes.length > 0) {
         transpilations = transpilations.concat(await Promise.all(plainindexes.map(
             async (obj: APIObject): Promise<string> => {
-                return transpilePlainIndex(obj, logger);
+                return transpilePlainIndex(obj);
             }
         )));
     }
@@ -126,7 +126,7 @@ const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, l
     if (uniqueindexes && uniqueindexes.length > 0) {
         transpilations = transpilations.concat(await Promise.all(uniqueindexes.map(
             async (obj: APIObject): Promise<string> => {
-                return transpileUniqueIndex(obj, logger);
+                return transpileUniqueIndex(obj);
             }
         )));
     }
@@ -135,7 +135,7 @@ const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, l
     if (textindexes && textindexes.length > 0) {
         transpilations = transpilations.concat(await Promise.all(textindexes.map(
             async (obj: APIObject): Promise<string> => {
-                return transpileTextIndex(obj, logger);
+                return transpileTextIndex(obj);
             }
         )));
     }
@@ -144,7 +144,7 @@ const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, l
     if (spatialindexes && spatialindexes.length > 0) {
         transpilations = transpilations.concat(await Promise.all(spatialindexes.map(
             async (obj: APIObject): Promise<string> => {
-                return transpileSpatialIndex(obj, logger);
+                return transpileSpatialIndex(obj);
             }
         )));
     }
@@ -153,7 +153,7 @@ const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, l
     if (foreignKeys && foreignKeys.length > 0) {
         transpilations = transpilations.concat(await Promise.all(foreignKeys.map(
             async (obj: APIObject): Promise<string> => {
-                return transpileForeignKey(obj, logger);
+                return transpileForeignKey(obj);
             }
         )));
     }
@@ -162,7 +162,7 @@ const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, l
     if (entries && entries.length > 0) {
         transpilations = transpilations.concat(await Promise.all(entries.map(
             async (obj: APIObject): Promise<string> => {
-                return transpileEntry(obj, logger);
+                return transpileEntry(obj);
             }
         )));
     }
@@ -171,7 +171,7 @@ const transpile: SuggestedTargetIndexHandler = async (etcd: APIObjectDatabase, l
     if (postambles && postambles.length !== 0) {
         transpilations = transpilations.concat(await Promise.all(postambles.map(
             async (obj: APIObject): Promise<string> => {
-                return transpilePostamble(obj, logger);
+                return transpilePostamble(obj);
             }
         )));
     }

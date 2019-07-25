@@ -60,6 +60,18 @@ objects:
           # setters:
           #   - 'UPPER(%a)'
   - apiVersion: preql/1.0.0
+    kind: DataType
+    metadata:
+      name: petType
+    spec:
+      jsonEquivalent: string
+      name: petType
+      values:
+        - woofer
+        - floofer
+        - boofer
+        - pupperoni
+  - apiVersion: preql/1.0.0
     kind: Database
     metadata:
       name: floofy
@@ -160,14 +172,23 @@ objects:
       nullable: False
       default: McGobb
   - apiVersion: preql/1.0.0
+    kind: Attribute
+    metadata:
+      name: petType
+    spec:
+      name: type
+      type: petType
+      structName: pet
+      databaseName: floofy
+  - apiVersion: preql/1.0.0
     kind: ForeignKey
     metadata:
       name: owner
     spec:
       databaseName: floofy
-      parentStruct: person
-      childStruct: pet
-      attributeName: owner
+      parentStructName: person
+      childStructName: pet
+      name: owner
       nullable: True
   - apiVersion: preql/1.0.0
     kind: Entry
@@ -181,3 +202,16 @@ objects:
       values:
         firstName: Jonathan
         lastName: Wilbur
+  - apiVersion: preql/1.0.0
+    kind: Enum
+    metadata:
+      name: pixelColor
+    spec:
+      name: pixelColor
+      databaseName: floofy
+      type: varchar
+      length: 1
+      values:
+        - value: 'R'
+        - value: 'G'
+        - value: 'B'

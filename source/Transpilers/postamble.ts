@@ -1,7 +1,7 @@
-import { APIObject, PostambleSpec, SuggestedTargetObjectHandler } from 'preql-core';
+import { APIObject, PostambleSpec } from 'preql-core';
 import commentOut from '../commentOut';
 
-const transpilePostamble: SuggestedTargetObjectHandler = async (obj: APIObject<PostambleSpec>): Promise<string> => {
+const transpilePostamble = async (obj: APIObject<PostambleSpec>): Promise<string> => {
     return commentOut(obj.spec.uncommentedText);
 };
 

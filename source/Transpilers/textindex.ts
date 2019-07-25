@@ -1,11 +1,11 @@
-import { APIObject, TextIndexSpec, SuggestedTargetObjectHandler } from 'preql-core';
+import { APIObject, TextIndexSpec } from 'preql-core';
 
-const transpileTextIndex: SuggestedTargetObjectHandler = async (obj: APIObject<TextIndexSpec>): Promise<string> => {
+const transpileTextIndex = async (obj: APIObject<TextIndexSpec>): Promise<string> => {
     const schemaName: string = obj.spec.databaseName;
     const tableName: string = obj.spec.structName;
     const indexName: string = obj.spec.name;
     const storedProcedureName: string = `create_index_${indexName}`;
-    const columnString: string = obj.spec.keyColumns
+    const columnString: string = obj.spec.keyAttributes
         .map((key): string => `${key.name} ${(key.ascending ? 'ASC' : 'DESC')}`)
         .join(', ');
     return (

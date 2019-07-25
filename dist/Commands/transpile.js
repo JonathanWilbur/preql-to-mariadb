@@ -103,7 +103,7 @@ var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0
                 _b = (_a = transpilations).concat;
                 return [4 /*yield*/, Promise.all(preambles.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
-                            return [2 /*return*/, preamble_1.default(obj, logger)];
+                            return [2 /*return*/, preamble_1.default(obj)];
                         });
                     }); }))];
             case 1:
@@ -179,7 +179,7 @@ var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0
                 _r = (_q = transpilations).concat;
                 return [4 /*yield*/, Promise.all(plainindexes.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
-                            return [2 /*return*/, plainindex_1.default(obj, logger)];
+                            return [2 /*return*/, plainindex_1.default(obj)];
                         });
                     }); }))];
             case 13:
@@ -191,7 +191,7 @@ var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0
                 _t = (_s = transpilations).concat;
                 return [4 /*yield*/, Promise.all(uniqueindexes.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
-                            return [2 /*return*/, uniqueindex_1.default(obj, logger)];
+                            return [2 /*return*/, uniqueindex_1.default(obj)];
                         });
                     }); }))];
             case 15:
@@ -203,7 +203,7 @@ var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0
                 _v = (_u = transpilations).concat;
                 return [4 /*yield*/, Promise.all(textindexes.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
-                            return [2 /*return*/, textindex_1.default(obj, logger)];
+                            return [2 /*return*/, textindex_1.default(obj)];
                         });
                     }); }))];
             case 17:
@@ -215,7 +215,7 @@ var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0
                 _x = (_w = transpilations).concat;
                 return [4 /*yield*/, Promise.all(spatialindexes.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
-                            return [2 /*return*/, spatialindex_1.default(obj, logger)];
+                            return [2 /*return*/, spatialindex_1.default(obj)];
                         });
                     }); }))];
             case 19:
@@ -227,7 +227,7 @@ var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0
                 _z = (_y = transpilations).concat;
                 return [4 /*yield*/, Promise.all(foreignKeys.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
-                            return [2 /*return*/, foreignkey_1.default(obj, logger)];
+                            return [2 /*return*/, foreignkey_1.default(obj)];
                         });
                     }); }))];
             case 21:
@@ -239,7 +239,7 @@ var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0
                 _1 = (_0 = transpilations).concat;
                 return [4 /*yield*/, Promise.all(entries.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
-                            return [2 /*return*/, entry_1.default(obj, logger)];
+                            return [2 /*return*/, entry_1.default(obj)];
                         });
                     }); }))];
             case 23:
@@ -251,7 +251,7 @@ var transpile = function (etcd, logger) { return __awaiter(_this, void 0, void 0
                 _3 = (_2 = transpilations).concat;
                 return [4 /*yield*/, Promise.all(postambles.map(function (obj) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
-                            return [2 /*return*/, postamble_1.default(obj, logger)];
+                            return [2 /*return*/, postamble_1.default(obj)];
                         });
                     }); }))];
             case 25:

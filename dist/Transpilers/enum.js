@@ -34,37 +34,27 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
-var escape_1 = __importDefault(require("../escape"));
-var transpileForeignKeyConstraint = function (obj) { return __awaiter(_this, void 0, void 0, function () {
-    var storedProcedureName, foreignKeyName, comment;
-    return __generator(this, function (_a) {
-        storedProcedureName = obj.spec.databaseName + ".create_fk_" + obj.spec.name;
-        foreignKeyName = "fk_" + obj.spec.childStructName + "_" + obj.spec.parentStructName;
-        comment = ('comment' in obj.metadata && typeof obj.metadata['comment'] === 'string') ? escape_1.default(obj.metadata['comment']) : '';
-        return [2 /*return*/, "ALTER TABLE " + obj.spec.databaseName + "." + obj.spec.childStructName + "\r\n"
-                + ("ADD COLUMN IF NOT EXISTS " + obj.spec.name + " ")
-                + ("BIGINT UNSIGNED " + (obj.spec.nullable ? 'NULL' : 'NOT NULL'))
-                + ((comment.length ? "\r\nCOMMENT '" + comment + "'" : '') + ";\r\n")
-                + ("DROP PROCEDURE IF EXISTS " + storedProcedureName + ";\r\n")
-                + 'DELIMITER $$\r\n'
-                + ("CREATE PROCEDURE IF NOT EXISTS " + storedProcedureName + " ()\r\n")
-                + 'BEGIN\r\n'
-                + '\tDECLARE EXIT HANDLER FOR 1005 DO 0;\r\n'
-                + ("\tALTER TABLE " + obj.spec.databaseName + "." + obj.spec.childStructName + "\r\n")
-                + ("\tADD CONSTRAINT " + foreignKeyName + " FOREIGN KEY\r\n")
-                + ("\tIF NOT EXISTS " + foreignKeyName + "_index (" + obj.spec.name + ")\r\n")
-                + ("\tREFERENCES " + obj.spec.parentStructName + " (id)\r\n")
-                + ("\tON DELETE " + (obj.spec.onDeleteAction.toUpperCase() || 'RESTRICT') + "\r\n")
-                + ("\tON UPDATE " + (obj.spec.onUpdateAction.toUpperCase() || 'RESTRICT') + ";\r\n")
-                + 'END $$\r\n'
-                + 'DELIMITER ;\r\n'
-                + ("CALL " + storedProcedureName + ";\r\n")
-                + ("DROP PROCEDURE IF EXISTS " + storedProcedureName + ";")];
+var preql_core_1 = require("preql-core");
+function transpileEnum(obj, etcd) {
+    return __awaiter(this, void 0, void 0, function () {
+        var tableName, ret, datatype;
+        return __generator(this, function (_a) {
+            tableName = obj.spec.name + "_enum";
+            ret = "CREATE TABLE IF NOT EXISTS " + tableName + " (value ";
+            datatype = (etcd.kindIndex.datatype || [])
+                .find(function (dt) { return dt.metadata.name.toLowerCase() === obj.spec.type; });
+            if (!datatype) {
+                throw new Error("Data type '" + obj.spec.type + "' not recognized.");
+            }
+            ret += preql_core_1.transpileDataType('mariadb', datatype, obj);
+            ret += ' NOT NULL PRIMARY KEY);\r\n';
+            ret += "INSERT IGNORE INTO " + tableName + " VALUES (\r\n";
+            ret += obj.spec.values.map(function (v) { return "\t'" + v.value + "', -- " + (v.index ? (tableName + '_' + v.index) : '') + "\r\n"; });
+            ret += ');';
+            return [2 /*return*/, ret];
+        });
     });
-}); };
-exports.default = transpileForeignKeyConstraint;
+}
+exports.default = transpileEnum;
+;

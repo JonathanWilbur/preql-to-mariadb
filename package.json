@@ -9,11 +9,11 @@
   "author": "Jonathan M. Wilbur <jonathan@wilbur.space>",
   "license": "MIT",
   "dependencies": {
-    "preql-core": "^1.0.0-delta-rc1",
+    "preql-core": "^1.0.0-o",
     "tz-offset": "0.0.2"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.27",
+    "@types/aws-lambda": "^8.10.30",
     "@types/tz-offset": "0.0.0"
   }
 }

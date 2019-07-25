@@ -23,6 +23,5 @@ This library converts PreQL into MariaDB SQL.
 - [x] Transpile `CharacterSet`
 - [x] Transpile `Collation`
 - [x] Support multi-valued attributes
-- [ ] Add explanatory comments
 - [ ] Warn on unrecognized types.
 - [ ] Resize columns?

@@ -1,7 +1,7 @@
-import { APIObject, PlainIndexSpec, SuggestedTargetObjectHandler } from 'preql-core';
+import { APIObject, PlainIndexSpec } from 'preql-core';
 
-const transpilePlainIndex: SuggestedTargetObjectHandler = async (obj: APIObject<PlainIndexSpec>): Promise<string> => {
-    const columnString: string = obj.spec.keyColumns
+const transpilePlainIndex = async (obj: APIObject<PlainIndexSpec>): Promise<string> => {
+    const columnString: string = obj.spec.keyAttributes
         .map((key): string => `${key.name} ${(key.ascending ? 'ASC' : 'DESC')}`)
         .join(', ');
     return (

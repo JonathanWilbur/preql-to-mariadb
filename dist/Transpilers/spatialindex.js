@@ -43,7 +43,7 @@ var transpileSpatialIndex = function (obj) { return __awaiter(_this, void 0, voi
         tableName = obj.spec.structName;
         indexName = obj.spec.name;
         storedProcedureName = "create_index_" + indexName;
-        columnString = obj.spec.keyColumns
+        columnString = obj.spec.keyAttributes
             .map(function (key) { return key.name + " " + (key.ascending ? 'ASC' : 'DESC'); })
             .join(', ');
         return [2 /*return*/, ("DROP PROCEDURE IF EXISTS " + storedProcedureName + ";\r\n"
