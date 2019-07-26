@@ -1,4 +1,4 @@
-import { APIObject, APIObjectDatabase, AttributeSpec, DataTypeSpec, Logger, transpileDataType, CharacterSetSpec, CollationSpec } from 'preql-core';
+import { APIObject, APIObjectDatabase, AttributeSpec, DataTypeSpec, Logger, CharacterSetSpec, CollationSpec } from 'preql-core';
 
 const transpileAttribute = async (obj: APIObject<AttributeSpec>, logger: Logger, etcd: APIObjectDatabase): Promise<string> => {
     const tableName: string = obj.spec.multiValued ?
@@ -26,8 +26,12 @@ const transpileAttribute = async (obj: APIObject<AttributeSpec>, logger: Logger,
     if (datatype.spec.values) {
       const maxLengthValue: number = datatype.spec.values.sort((a, b) => (b.length - a.length))[0].length;
       columnString += `CHAR(${maxLengthValue})`;
+    } else if (datatype.spec.targets.mariadb) {
+      columnString += datatype.spec.targets.mariadb.nativeType;
+    } else if (datatype.spec.targets.mysql) {
+      columnString += datatype.spec.targets.mysql.nativeType;
     } else {
-      columnString += transpileDataType('mariadb', datatype, obj);
+      throw new Error(`DataType '${datatype.metadata.name}' has no MariaDB or MySQL equivalent.`);
     }
 
     if (obj.spec.characterSet) {

@@ -36,7 +36,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
-var preql_core_1 = require("preql-core");
 var transpileAttribute = function (obj, logger, etcd) { return __awaiter(_this, void 0, void 0, function () {
     var tableName, columnString, type, datatype, maxLengthValue, characterSet, mariaDBEquivalent, collation, mariaDBEquivalent, storedProcedureName, foreignKeyName, enumTableName_1, maxLengthValue, checkRegexps_1, constraintBaseName, qualifiedTableName, qualifiedTableName, previousExpression_1, triggerBaseName;
     return __generator(this, function (_a) {
@@ -62,8 +61,14 @@ var transpileAttribute = function (obj, logger, etcd) { return __awaiter(_this, 
             maxLengthValue = datatype.spec.values.sort(function (a, b) { return (b.length - a.length); })[0].length;
             columnString += "CHAR(" + maxLengthValue + ")";
         }
+        else if (datatype.spec.targets.mariadb) {
+            columnString += datatype.spec.targets.mariadb.nativeType;
+        }
+        else if (datatype.spec.targets.mysql) {
+            columnString += datatype.spec.targets.mysql.nativeType;
+        }
         else {
-            columnString += preql_core_1.transpileDataType('mariadb', datatype, obj);
+            throw new Error("DataType '" + datatype.metadata.name + "' has no MariaDB or MySQL equivalent.");
         }
         if (obj.spec.characterSet) {
             characterSet = etcd.kindIndex.characterset

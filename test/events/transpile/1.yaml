@@ -45,20 +45,9 @@ objects:
       setters:
         - type: trim
           side: both
-        # - type: substring
-        #   from: 3
-        #   to: 8
       targets:
         mariadb:
-          return: 'VARCHAR(%l)'
-          # returnBasedOnLength:
-          #   1: 'BOOLEAN'
-          #   8: 'VARCHAR(8)'
-          #   32: 'VARCHAR(32)'
-          # check:
-          #   - 'LENGTH(%a) <= %l'
-          # setters:
-          #   - 'UPPER(%a)'
+          nativeType: 'VARCHAR(64)'
   - apiVersion: preql/1.0.0
     kind: DataType
     metadata:

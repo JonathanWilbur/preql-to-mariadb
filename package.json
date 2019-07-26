@@ -9,7 +9,7 @@
   "author": "Jonathan M. Wilbur <jonathan@wilbur.space>",
   "license": "MIT",
   "dependencies": {
-    "preql-core": "^1.0.0-r",
+    "preql-core": "^1.0.0-s",
     "tz-offset": "0.0.2"
   },
   "devDependencies": {
