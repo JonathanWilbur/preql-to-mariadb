@@ -8,3 +8,4 @@ var ConsoleLogger_1 = require("./ConsoleLogger");
 exports.ConsoleLogger = ConsoleLogger_1.default;
 var transpile_1 = require("./Commands/transpile");
 exports.transpile = transpile_1.default;
+//# sourceMappingURL=index.js.map

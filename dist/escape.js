@@ -6,3 +6,4 @@ function escape(str) {
         .replace("\\", "\\\\");
 }
 exports.default = escape;
+//# sourceMappingURL=escape.js.map

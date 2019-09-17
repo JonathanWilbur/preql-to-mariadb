@@ -12,12 +12,13 @@ function normalizeError(err) {
         && typeof err.errors === "object"
         && Array.isArray(err.errors)) {
         // eslint-disable-next-line
-        err.message += ": " + err.errors.map(function (e) {
+        err.message += `: ${err.errors.map((e) => {
             if ("message" in e)
                 return e.message;
             return "";
-        }).join(", ");
+        }).join(", ")}`;
     }
     return err;
 }
 exports.default = normalizeError;
+//# sourceMappingURL=normalizeError.js.map
