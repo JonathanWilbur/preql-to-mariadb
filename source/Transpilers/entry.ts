@@ -9,10 +9,10 @@ const transpileEntry = async (obj: APIObject<EntrySpec>): Promise<string> => (
                 const key: string = kv[0];
                 const value: string | number | boolean = kv[1];
                 switch (typeof key) {
-                case "boolean": return `${key} = ${value ? "TRUE" : "FALSE"}`;
-                case "number": return `${key} = ${value}`;
-                case "string": return `${key} = '${value}'`;
-                default: throw new Error(`Invalid data type for entry field '${key}'.`);
+                    case "boolean": return `${key} = ${value ? "TRUE" : "FALSE"}`;
+                    case "number": return `${key} = ${value}`;
+                    case "string": return `${key} = '${value}'`;
+                    default: throw new Error(`Invalid data type for entry field '${key}'.`);
                 }
             })
             .join(",\r\n\t")
@@ -22,10 +22,10 @@ const transpileEntry = async (obj: APIObject<EntrySpec>): Promise<string> => (
                 const key: string = kv[0];
                 const value: string | number | boolean = kv[1];
                 switch (typeof key) {
-                case "boolean": return `${key} = ${value ? "TRUE" : "FALSE"}`;
-                case "number": return `${key} = ${value}`;
-                case "string": return `${key} = '${value}'`;
-                default: throw new Error(`Invalid data type for entry field '${key}'.`);
+                    case "boolean": return `${key} = ${value ? "TRUE" : "FALSE"}`;
+                    case "number": return `${key} = ${value}`;
+                    case "string": return `${key} = '${value}'`;
+                    default: throw new Error(`Invalid data type for entry field '${key}'.`);
                 }
             })
             .join(",\r\n\t")
