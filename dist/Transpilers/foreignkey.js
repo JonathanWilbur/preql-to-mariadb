@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -37,32 +38,31 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var escape_1 = __importDefault(require("../escape"));
-var transpileForeignKeyConstraint = function (obj) { return __awaiter(_this, void 0, void 0, function () {
+var transpileForeignKeyConstraint = function (obj) { return __awaiter(void 0, void 0, void 0, function () {
     var storedProcedureName, foreignKeyName, comment;
     return __generator(this, function (_a) {
         storedProcedureName = obj.spec.databaseName + ".create_fk_" + obj.spec.name;
         foreignKeyName = "fk_" + obj.spec.childStructName + "_" + obj.spec.parentStructName;
-        comment = ('comment' in obj.metadata && typeof obj.metadata['comment'] === 'string') ? escape_1.default(obj.metadata['comment']) : '';
+        comment = obj.metadata.labels.comment ? escape_1.default(obj.metadata.labels.comment) : "";
         return [2 /*return*/, "ALTER TABLE " + obj.spec.databaseName + "." + obj.spec.childStructName + "\r\n"
                 + ("ADD COLUMN IF NOT EXISTS " + obj.spec.name + " ")
-                + ("BIGINT UNSIGNED " + (obj.spec.nullable ? 'NULL' : 'NOT NULL'))
-                + ((comment.length ? "\r\nCOMMENT '" + comment + "'" : '') + ";\r\n")
+                + ("BIGINT UNSIGNED " + (obj.spec.nullable ? "NULL" : "NOT NULL"))
+                + ((comment.length ? "\r\nCOMMENT '" + comment + "'" : "") + ";\r\n")
                 + ("DROP PROCEDURE IF EXISTS " + storedProcedureName + ";\r\n")
-                + 'DELIMITER $$\r\n'
-                + ("CREATE PROCEDURE IF NOT EXISTS " + storedProcedureName + " ()\r\n")
-                + 'BEGIN\r\n'
-                + '\tDECLARE EXIT HANDLER FOR 1005 DO 0;\r\n'
+                + "DELIMITER $$\r\n"
+                + ("CREATE PROCEDURE " + storedProcedureName + " ()\r\n")
+                + "BEGIN\r\n"
+                + "\tDECLARE EXIT HANDLER FOR 1005 DO 0;\r\n"
                 + ("\tALTER TABLE " + obj.spec.databaseName + "." + obj.spec.childStructName + "\r\n")
                 + ("\tADD CONSTRAINT " + foreignKeyName + " FOREIGN KEY\r\n")
                 + ("\tIF NOT EXISTS " + foreignKeyName + "_index (" + obj.spec.name + ")\r\n")
                 + ("\tREFERENCES " + obj.spec.parentStructName + " (id)\r\n")
-                + ("\tON DELETE " + (obj.spec.onDeleteAction.toUpperCase() || 'RESTRICT') + "\r\n")
-                + ("\tON UPDATE " + (obj.spec.onUpdateAction.toUpperCase() || 'RESTRICT') + ";\r\n")
-                + 'END $$\r\n'
-                + 'DELIMITER ;\r\n'
+                + ("\tON DELETE " + (obj.spec.onDeleteAction.toUpperCase() || "RESTRICT") + "\r\n")
+                + ("\tON UPDATE " + (obj.spec.onUpdateAction.toUpperCase() || "RESTRICT") + ";\r\n")
+                + "END $$\r\n"
+                + "DELIMITER ;\r\n"
                 + ("CALL " + storedProcedureName + ";\r\n")
                 + ("DROP PROCEDURE IF EXISTS " + storedProcedureName + ";")];
     });

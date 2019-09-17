@@ -1,17 +1,17 @@
-import { Logger } from 'preql-core';
+import { Logger } from "preql-core";
 
 export default
 class ConsoleLogger implements Logger {
-    debug(event: string): void {
+    debug (event: string): void {
         if (console) console.debug(event);
     }
-    info(event: string): void {
+    info (event: string): void {
         if (console) console.info(event);
     }
-    warn(event: string): void {
+    warn (event: string): void {
         if (console) console.warn(event);
     }
-    error(event: string): void {
+    error (event: string): void {
         if (console) console.error(event);
     }
-};
+}

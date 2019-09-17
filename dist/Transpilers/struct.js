@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -34,13 +35,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
-var transpileStruct = function (obj, logger, etcd) { return __awaiter(_this, void 0, void 0, function () {
+var transpileStruct = function (obj, logger, etcd) { return __awaiter(void 0, void 0, void 0, function () {
     var ret, characterSet, mariaDBEquivalent, collation, mariaDBEquivalent;
     return __generator(this, function (_a) {
         ret = "CREATE TABLE IF NOT EXISTS " + obj.spec.databaseName + "." + obj.spec.name + " "
-            + '(id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY);\r\n'
+            + "(id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY);\r\n"
             + ("ALTER TABLE " + obj.spec.databaseName + "." + obj.spec.name + " ")
             + "ADD COLUMN IF NOT EXISTS id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY;";
         if (obj.spec.characterSet) {
@@ -53,13 +53,13 @@ var transpileStruct = function (obj, logger, etcd) { return __awaiter(_this, voi
                     ret += "\r\nALTER TABLE " + obj.spec.databaseName + "." + obj.spec.name + " DEFAULT CHARACTER SET = '" + mariaDBEquivalent + "';";
                 }
                 else {
-                    logger.warn('No MariaDB or MySQL equivalent character set for PreQL '
+                    logger.warn("No MariaDB or MySQL equivalent character set for PreQL "
                         + ("character set '" + characterSet.metadata.name + "'."));
                 }
             }
             else {
                 logger.error("Expected CharacterSet '" + obj.spec.characterSet + "' did not exist! "
-                    + 'This is a bug in the PreQL Core library.');
+                    + "This is a bug in the PreQL Core library.");
             }
         }
         if (obj.spec.collation) {
@@ -72,13 +72,13 @@ var transpileStruct = function (obj, logger, etcd) { return __awaiter(_this, voi
                     ret += "\r\nALTER TABLE " + obj.spec.databaseName + "." + obj.spec.name + " DEFAULT COLLATE = '" + mariaDBEquivalent + "';";
                 }
                 else {
-                    logger.warn('No MariaDB or MySQL equivalent collation for PreQL '
+                    logger.warn("No MariaDB or MySQL equivalent collation for PreQL "
                         + ("collation '" + collation.metadata.name + "'."));
                 }
             }
             else {
                 logger.error("Expected Collation '" + obj.spec.characterSet + "' did not exist! "
-                    + 'This is a bug in the PreQL Core library.');
+                    + "This is a bug in the PreQL Core library.");
             }
         }
         return [2 /*return*/, ret];

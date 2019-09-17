@@ -7,19 +7,33 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Transpile - Serverless",
-            "program": "${workspaceFolder}/node_modules/.bin/sls",
-            "args": [
-                "invoke",
-                "local",
-                "-f",
-                "transpile",
-                "-p",
-                "./test/events/transpile/1.yaml"
-            ],
+            "name": "Default",
+            "program": "${workspaceFolder}/dist/index.js",
+            "args": [],
             "outFiles": [
-                "${workspaceFolder}/**/*.js"
-            ]
+                "${workspaceFolder}/**/*.js",
+            ],
+        },
+        // I have found this to be somewhat unresponsive to breakpoints.
+        // I got it to work before by adding a `debugger` statement in
+        // my tests, then fidgeting with the breakpoints once the `debugger`
+        // statement pauses execution.
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Debug Jest Tests",
+            "runtimeArgs": [
+                "--inspect-brk",
+            ],
+            // Use this on Posix machines:
+            "program": "${workspaceRoot}/node_modules/.bin/jest",
+            // Use this on Windows machines:
+            // "program": "${workspaceRoot}/node_modules/jest/bin/jest.js",
+            "args": [
+                "--runInBand",
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
         }
-    ]
+    ],
 }

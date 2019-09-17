@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -37,23 +38,22 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var preql_core_1 = require("preql-core");
 var normalizeError_1 = __importDefault(require("../../normalizeError"));
 var transpile_1 = __importDefault(require("../../Commands/transpile"));
 var ConsoleLogger_1 = __importDefault(require("../../ConsoleLogger"));
 var loggy = new ConsoleLogger_1.default();
-var handler = function (event, context, callback) { return __awaiter(_this, void 0, void 0, function () {
+var handler = function (event, context, callback) { return __awaiter(void 0, void 0, void 0, function () {
     var namespaces, transpilation, e_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 // REVIEW: Handle JSON and YAML strings, too?
-                if (!(typeof event === 'object'))
-                    callback(new Error('Event was not of an object type.'));
+                if (!(typeof event === "object"))
+                    callback(new Error("Event was not of an object type."));
                 if (!event.objects)
-                    callback(new Error('Event was supposed to have an `objects` field.'));
+                    callback(new Error("Event was supposed to have an `objects` field."));
                 _a.label = 1;
             case 1:
                 _a.trys.push([1, 6, , 7]);
@@ -66,7 +66,7 @@ var handler = function (event, context, callback) { return __awaiter(_this, void
                 return [4 /*yield*/, Promise.all(Object.values(namespaces).map(preql_core_1.validateNamespace))];
             case 4:
                 _a.sent();
-                return [4 /*yield*/, transpile_1.default(namespaces[event.namespace || 'default'], loggy)];
+                return [4 /*yield*/, transpile_1.default(namespaces[event.namespace || "default"], loggy)];
             case 5:
                 transpilation = _a.sent();
                 callback(null, {

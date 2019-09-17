@@ -1,19 +1,54 @@
 {
-  "name": "preql-mariadb",
-  "version": "1.0.0-beta",
-  "description": "Library for converting PreQL to MariaDB SQL",
-  "main": "./dist/index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "Jonathan M. Wilbur <jonathan@wilbur.space>",
-  "license": "MIT",
-  "dependencies": {
-    "preql-core": "^1.0.0-w",
-    "tz-offset": "0.0.2"
-  },
-  "devDependencies": {
-    "@types/aws-lambda": "^8.10.31",
-    "@types/tz-offset": "0.0.0"
-  }
+    "name": "preql-mariadb",
+    "version": "0.2.0",
+    "description": "Library for converting PreQL to MariaDB SQL",
+    "main": "./dist/index.js",
+    "scripts": {
+        "build": "npx tsc && npx webpack",
+        "clean": "rm -rf dist; mkdir -p dist",
+        "deploy-functions": "npx sls deploy",
+        "lint": "npx eslint --config .eslintrc.yml './source/**/*.ts' || true",
+        "remove-functions": "npx sls remove",
+        "test": "npx jest --ci --reporters=default --reporters=jest-junit"
+    },
+    "bugs": {
+        "email": "jonathan@wilbur.space"
+    },
+    "contributors": [
+        {
+            "email": "jonathan@wilbur.space",
+            "name": "Jonathan M. Wilbur",
+            "url": "https://github.com/JonathanWilbur"
+        }
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "preql-core": "^1.0.0",
+        "tz-offset": "0.0.2"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.6.0",
+        "@babel/preset-env": "^7.6.0",
+        "@babel/preset-typescript": "^7.6.0",
+        "@types/aws-lambda": "^8.10.31",
+        "@types/tz-offset": "0.0.0",
+        "@typescript-eslint/eslint-plugin": "^2.3.0",
+        "@typescript-eslint/parser": "^2.3.0",
+        "eslint": "^6.4.0",
+        "jest": "^24.9.0",
+        "jest-junit": "^8.0.0",
+        "serverless": "^1.52.0",
+        "ts-loader": "^6.1.0",
+        "typescript": "^3.6.3",
+        "webpack": "^4.40.2",
+        "webpack-cli": "^3.3.8"
+    },
+    "files": [
+        "dist/**/*"
+    ],
+    "directories": {
+        "doc": "documentation",
+        "test": "test"
+    },
+    "types": "./dist/index.d.ts"
 }

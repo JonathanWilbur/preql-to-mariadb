@@ -30,21 +30,9 @@ objects:
   - apiVersion: preql/1.0.0
     kind: DataType
     metadata:
-      name: varchar
+      name: varchar64
     spec:
       jsonEquivalent: string
-      regexes:
-        pcre:
-          personName:
-            - pattern: '^[A-Za-z ]+'
-            - pattern: '.{2,}'
-            - pattern: 'Phil Collins'
-              positive: False
-          robotName:
-            - pattern: '^[0-9]+'
-      setters:
-        - type: trim
-          side: both
       targets:
         mariadb:
           nativeType: 'VARCHAR(64)'
@@ -98,8 +86,7 @@ objects:
       name: memberOfGroup
       structName: person
       databaseName: floofy
-      type: varchar
-      length: 64
+      type: varchar64
       nullable: True
       multiValued: True
   - apiVersion: preql/1.0.0
@@ -112,8 +99,7 @@ objects:
       name: ownerFirstName
       structName: pet
       databaseName: floofy
-      type: varchar
-      length: 64
+      type: varchar64
       nullable: False
       default: Bob
   - apiVersion: preql/1.0.0
@@ -126,8 +112,7 @@ objects:
       name: ownerLastName
       structName: pet
       databaseName: floofy
-      type: varchar
-      length: 64
+      type: varchar64
       nullable: False
       default: Bob
       characterSet: utf8
@@ -142,8 +127,7 @@ objects:
       name: firstName
       structName: person
       databaseName: floofy
-      type: varchar
-      length: 64
+      type: varchar64
       nullable: False
       default: Bob
   - apiVersion: preql/1.0.0
@@ -156,8 +140,7 @@ objects:
       name: lastName
       structName: person
       databaseName: floofy
-      type: varchar
-      length: 64
+      type: varchar64
       nullable: False
       default: McGobb
   - apiVersion: preql/1.0.0
@@ -179,19 +162,20 @@ objects:
       childStructName: pet
       name: owner
       nullable: True
-  - apiVersion: preql/1.0.0
-    kind: Entry
-    metadata:
-      name: myself
-      labels:
-        name: biggay
-    spec:
-      databaseName: floofy
-      structName: person
-      id: 14
-      values:
-        firstName: Jonathan
-        lastName: Wilbur
+  # - apiVersion: preql/1.0.0
+  #   kind: Entry
+  #   metadata:
+  #     name: myself
+  #     labels:
+  #       name: biggay
+  #   spec:
+  #     databaseName: floofy
+  #     structName: person
+  #     id: 14
+  #     values:
+  #       # TODO: These had to be lower-cased record it as a bug.
+  #       firstname: Jonathan
+  #       lastname: Wilbur
   - apiVersion: preql/1.0.0
     kind: Enum
     metadata:
@@ -199,8 +183,6 @@ objects:
     spec:
       name: pixelColor
       databaseName: floofy
-      type: varchar
-      length: 1
       values:
         - value: 'R'
         - value: 'G'

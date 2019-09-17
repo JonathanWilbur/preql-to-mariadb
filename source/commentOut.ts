@@ -1,4 +1,4 @@
 export default
-function commentOut(uncommentedText: string): string {
-    return ('-- ' + uncommentedText.replace(/--/g, '\\-\\-').replace(/\r?\n/g, '\r\n-- '));
-};
+function commentOut (uncommentedText: string): string {
+    return ("-- " + uncommentedText.replace(/--/gu, "\\-\\-").replace(/\r?\n/gu, "\r\n-- "));
+}

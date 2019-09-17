@@ -1,31 +1,31 @@
-import { APIObject, StructSpec, Logger, APIObjectDatabase, CharacterSetSpec, CollationSpec } from 'preql-core';
+import { APIObject, StructSpec, Logger, APIObjectDatabase, CharacterSetSpec, CollationSpec } from "preql-core";
 
 const transpileStruct = async (obj: APIObject<StructSpec>, logger: Logger, etcd: APIObjectDatabase): Promise<string> => {
-    let ret: string =
-        `CREATE TABLE IF NOT EXISTS ${obj.spec.databaseName}.${obj.spec.name} `
-        + '(id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY);\r\n'
+    let ret: string
+        = `CREATE TABLE IF NOT EXISTS ${obj.spec.databaseName}.${obj.spec.name} `
+        + "(id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY);\r\n"
         + `ALTER TABLE ${obj.spec.databaseName}.${obj.spec.name} `
-        + `ADD COLUMN IF NOT EXISTS id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY;`;
+        + "ADD COLUMN IF NOT EXISTS id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY;";
 
     if (obj.spec.characterSet) {
         const characterSet: APIObject<CharacterSetSpec> | undefined = etcd.kindIndex.characterset
             .find((cs): boolean => obj.spec.characterSet === cs.spec.name);
         if (characterSet) {
-            const mariaDBEquivalent: string | undefined =
-                characterSet.spec.targetEquivalents.mariadb
+            const mariaDBEquivalent: string | undefined
+                = characterSet.spec.targetEquivalents.mariadb
                 || characterSet.spec.targetEquivalents.mysql;
             if (mariaDBEquivalent) {
                 ret += `\r\nALTER TABLE ${obj.spec.databaseName}.${obj.spec.name} DEFAULT CHARACTER SET = '${mariaDBEquivalent}';`;
             } else {
                 logger.warn(
-                    'No MariaDB or MySQL equivalent character set for PreQL '
+                    "No MariaDB or MySQL equivalent character set for PreQL "
                     + `character set '${characterSet.metadata.name}'.`
                 );
             }
         } else {
             logger.error(
                 `Expected CharacterSet '${obj.spec.characterSet}' did not exist! `
-                + 'This is a bug in the PreQL Core library.'
+                + "This is a bug in the PreQL Core library."
             );
         }
     }
@@ -34,21 +34,21 @@ const transpileStruct = async (obj: APIObject<StructSpec>, logger: Logger, etcd:
         const collation: APIObject<CollationSpec> | undefined = etcd.kindIndex.collation
             .find((c): boolean => obj.spec.collation === c.spec.name);
         if (collation) {
-            const mariaDBEquivalent: string | undefined =
-                collation.spec.targetEquivalents.mariadb
+            const mariaDBEquivalent: string | undefined
+                = collation.spec.targetEquivalents.mariadb
                 || collation.spec.targetEquivalents.mysql;
             if (mariaDBEquivalent) {
                 ret += `\r\nALTER TABLE ${obj.spec.databaseName}.${obj.spec.name} DEFAULT COLLATE = '${mariaDBEquivalent}';`;
             } else {
                 logger.warn(
-                    'No MariaDB or MySQL equivalent collation for PreQL '
+                    "No MariaDB or MySQL equivalent collation for PreQL "
                     + `collation '${collation.metadata.name}'.`
                 );
             }
         } else {
             logger.error(
                 `Expected Collation '${obj.spec.characterSet}' did not exist! `
-                + 'This is a bug in the PreQL Core library.'
+                + "This is a bug in the PreQL Core library."
             );
         }
     }

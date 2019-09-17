@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -34,9 +35,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
-var transpileTextIndex = function (obj) { return __awaiter(_this, void 0, void 0, function () {
+var transpileTextIndex = function (obj) { return __awaiter(void 0, void 0, void 0, function () {
     var schemaName, tableName, indexName, storedProcedureName, columnString;
     return __generator(this, function (_a) {
         schemaName = obj.spec.databaseName;
@@ -44,17 +44,17 @@ var transpileTextIndex = function (obj) { return __awaiter(_this, void 0, void 0
         indexName = obj.spec.name;
         storedProcedureName = "create_index_" + indexName;
         columnString = obj.spec.keyAttributes
-            .map(function (key) { return key.name + " " + (key.ascending ? 'ASC' : 'DESC'); })
-            .join(', ');
+            .map(function (key) { return key.name + " " + (key.ascending ? "ASC" : "DESC"); })
+            .join(", ");
         return [2 /*return*/, ("DROP PROCEDURE IF EXISTS " + storedProcedureName + ";\r\n"
-                + 'DELIMITER $$\r\n'
-                + ("CREATE PROCEDURE IF NOT EXISTS " + storedProcedureName + " ()\r\n")
-                + 'BEGIN\r\n'
-                + '\tDECLARE EXIT HANDLER FOR 1061 DO 0;\r\n'
+                + "DELIMITER $$\r\n"
+                + ("CREATE PROCEDURE " + storedProcedureName + " ()\r\n")
+                + "BEGIN\r\n"
+                + "\tDECLARE EXIT HANDLER FOR 1061 DO 0;\r\n"
                 + ("\tALTER TABLE " + schemaName + "." + tableName + "\r\n")
                 + ("\tADD FULLTEXT INDEX (" + columnString + ");\r\n")
-                + 'END $$\r\n'
-                + 'DELIMITER ;\r\n'
+                + "END $$\r\n"
+                + "DELIMITER ;\r\n"
                 + ("CALL " + storedProcedureName + ";\r\n")
                 + ("DROP PROCEDURE IF EXISTS " + storedProcedureName + ";"))];
     });

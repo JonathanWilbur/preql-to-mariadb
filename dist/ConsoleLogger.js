@@ -22,4 +22,3 @@ var ConsoleLogger = /** @class */ (function () {
     return ConsoleLogger;
 }());
 exports.default = ConsoleLogger;
-;
