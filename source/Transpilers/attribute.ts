@@ -127,7 +127,7 @@ const transpileAttribute = async (
         // Add FKC
         columnString += (
             `DROP PROCEDURE IF EXISTS ${storedProcedureName};\r\n`
-            + "DELIMITER $$\r\n"
+            + "DELIMITER ;;\r\n"
             + `CREATE PROCEDURE ${storedProcedureName} ()\r\n`
             + "BEGIN\r\n"
             + "\tDECLARE EXIT HANDLER FOR 1005 DO 0;\r\n"
@@ -135,7 +135,7 @@ const transpileAttribute = async (
             + `\tADD CONSTRAINT ${foreignKeyName} FOREIGN KEY\r\n`
             + `\tIF NOT EXISTS ${foreignKeyName}_index (\`${obj.spec.name}\`)\r\n`
             + `\tREFERENCES ${enumTableName} (value);\r\n`
-            + "END $$\r\n"
+            + "END ;;\r\n"
             + "DELIMITER ;\r\n"
             + `CALL ${storedProcedureName};\r\n`
             + `DROP PROCEDURE IF EXISTS ${storedProcedureName};`

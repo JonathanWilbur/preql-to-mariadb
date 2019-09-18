@@ -19,7 +19,7 @@ const dropAllPreqlCheckConstraintsForTableTemplate = (db: APIObject<DatabaseSpec
     const schemaName: string = db.spec.name;
     const spName: string = `${schemaName}.dropAllPreqlCheckConstraintsForTable`
     return `DROP PROCEDURE IF EXISTS ${spName};\r\n`
-  + "DELIMITER $$\r\n"
+  + "DELIMITER ;;\r\n"
   + `CREATE PROCEDURE ${spName} (IN param_table VARCHAR(255))\r\n`
   + "BEGIN\r\n"
   + "\tDECLARE done BOOLEAN DEFAULT FALSE;\r\n"
@@ -46,7 +46,7 @@ const dropAllPreqlCheckConstraintsForTableTemplate = (db: APIObject<DatabaseSpec
   + "\t\tDEALLOCATE PREPARE dropClientUpdateKeyStmt;\r\n"
   + "\tEND LOOP;\r\n"
   + "\tCLOSE dropCur;\r\n"
-  + "END $$\r\n"
+  + "END ;;\r\n"
   + "DELIMITER ;";
 };
 

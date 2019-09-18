@@ -2,7 +2,7 @@ import { APIObject, ServerSpec, Logger, APIObjectDatabase, CharacterSetSpec, Col
 import { offsetOf, Timezone } from "tz-offset";
 
 const transpileServer = async (obj: APIObject<ServerSpec>, logger: Logger, etcd: APIObjectDatabase): Promise<string> => {
-    let ret = `DELIMITER $$\r\nIF @@hostname = '${obj.spec.hostname}' OR @@logical_server_name = '${obj.spec.name}' THEN\r\n\tDO 0;\r\n`;
+    let ret = `DELIMITER ;;\r\nIF @@hostname = '${obj.spec.hostname}' OR @@logical_server_name = '${obj.spec.name}' THEN\r\n\tDO 0;\r\n`;
 
     if (obj.spec.timezone) {
         const offsetInMinutes: number = offsetOf(obj.spec.timezone as Timezone);
@@ -60,7 +60,7 @@ const transpileServer = async (obj: APIObject<ServerSpec>, logger: Logger, etcd:
         }
     }
 
-    ret += "END IF;\r\nDELIMITER ;";
+    ret += "END IF ;;\r\nDELIMITER ;";
     return ret;
 };
 

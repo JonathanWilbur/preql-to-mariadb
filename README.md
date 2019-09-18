@@ -1,4 +1,4 @@
-# PreQL
+# PreQL-to-MariaDB Transpiler
 
 * Author: Jonathan M. Wilbur <[jonathan@wilbur.space](mailto:jonathan@wilbur.space)>
 * Copyright Year: 2019
@@ -27,3 +27,5 @@ This library converts PreQL into MariaDB SQL.
 - [ ] Resize columns?
 - [ ] Wrap column names in backticks
 - [ ] Fix issue with transpiling `Entry`.
+- [ ] Create an API that emits an array of statements.
+- [ ] Put comments between statements.

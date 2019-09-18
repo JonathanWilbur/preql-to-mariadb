@@ -10,13 +10,13 @@ const transpileUniqueIndex = async (obj: APIObject<UniqueIndexSpec>): Promise<st
         .join(", ");
     return (
         `DROP PROCEDURE IF EXISTS ${storedProcedureName};\r\n`
-        + "DELIMITER $$\r\n"
+        + "DELIMITER ;;\r\n"
         + `CREATE PROCEDURE ${storedProcedureName} ()\r\n`
         + "BEGIN\r\n"
         + "\tDECLARE EXIT HANDLER FOR 1061 DO 0;\r\n"
         + `\tALTER TABLE ${schemaName}.${tableName}\r\n`
         + `\tADD CONSTRAINT ${indexName} UNIQUE KEY (${columnString});\r\n`
-        + "END $$\r\n"
+        + "END ;;\r\n"
         + "DELIMITER ;\r\n"
         + `CALL ${storedProcedureName};\r\n`
         + `DROP PROCEDURE IF EXISTS ${storedProcedureName};`

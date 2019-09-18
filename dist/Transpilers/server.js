@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const tz_offset_1 = require("tz-offset");
 const transpileServer = async (obj, logger, etcd) => {
-    let ret = `DELIMITER $$\r\nIF @@hostname = '${obj.spec.hostname}' OR @@logical_server_name = '${obj.spec.name}' THEN\r\n\tDO 0;\r\n`;
+    let ret = `DELIMITER ;;\r\nIF @@hostname = '${obj.spec.hostname}' OR @@logical_server_name = '${obj.spec.name}' THEN\r\n\tDO 0;\r\n`;
     if (obj.spec.timezone) {
         const offsetInMinutes = tz_offset_1.offsetOf(obj.spec.timezone);
         const offsetHourString = Math.floor(Math.abs(offsetInMinutes) / 60).toString().padStart(2, "0");
@@ -50,7 +50,7 @@ const transpileServer = async (obj, logger, etcd) => {
                 + "This is a bug in the PreQL Core library.");
         }
     }
-    ret += "END IF;\r\nDELIMITER ;";
+    ret += "END IF ;;\r\nDELIMITER ;";
     return ret;
 };
 exports.default = transpileServer;
