@@ -1,6 +1,6 @@
 {
     "name": "preql-mariadb",
-    "version": "0.2.2",
+    "version": "0.2.3",
     "description": "Library for converting PreQL to MariaDB SQL",
     "main": "./dist/index.js",
     "scripts": {
@@ -41,7 +41,7 @@
         "ts-loader": "^6.1.0",
         "typescript": "^3.6.3",
         "webpack": "^4.40.2",
-        "webpack-cli": "^3.3.8"
+        "webpack-cli": "^3.3.9"
     },
     "files": [
         "dist/**/*"
