@@ -1,1 +1,1 @@
-{"version":3,"file":"foreignkey.d.ts","sourceRoot":"","sources":["../../source/Transpilers/foreignkey.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,SAAS,EAAE,cAAc,EAAE,MAAM,YAAY,CAAC;AAGvD,QAAA,MAAM,6BAA6B,qDAwB9B,CAAC;AAEN,eAAe,6BAA6B,CAAC"}
+{"version":3,"file":"foreignkey.d.ts","sourceRoot":"","sources":["../../source/Transpilers/foreignkey.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,SAAS,EAAE,cAAc,EAAE,MAAM,YAAY,CAAC;AAGvD,QAAA,MAAM,6BAA6B,uDAwB9B,CAAC;AAEN,eAAe,6BAA6B,CAAC"}

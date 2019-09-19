@@ -1,6 +1,6 @@
 import { APIObject, EntrySpec } from "preql-core";
 
-const transpileEntry = async (obj: APIObject<EntrySpec>): Promise<string> => (
+const transpileEntry = async (obj: APIObject<EntrySpec>): Promise<string[]> => [
     `INSERT INTO ${obj.spec.databaseName}.${obj.spec.structName}\r\n`
         + "SET\r\n\t"
         + `id = ${obj.spec.id},\r\n\t`
@@ -28,8 +28,7 @@ const transpileEntry = async (obj: APIObject<EntrySpec>): Promise<string> => (
                     default: throw new Error(`Invalid data type for entry field '${key}'.`);
                 }
             })
-            .join(",\r\n\t")
-        + ";\r\n"
-);
+            .join(",\r\n\t"),
+    ];
 
 export default transpileEntry;

@@ -1,1 +1,1 @@
-{"version":3,"file":"spatialindex.d.ts","sourceRoot":"","sources":["../../source/Transpilers/spatialindex.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,SAAS,EAAE,gBAAgB,EAAE,MAAM,YAAY,CAAC;AAEzD,QAAA,MAAM,qBAAqB,uDAqB1B,CAAC;AAEF,eAAe,qBAAqB,CAAC"}
+{"version":3,"file":"spatialindex.d.ts","sourceRoot":"","sources":["../../source/Transpilers/spatialindex.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,SAAS,EAAE,gBAAgB,EAAE,MAAM,YAAY,CAAC;AAEzD,QAAA,MAAM,qBAAqB,yDAmB1B,CAAC;AAEF,eAAe,qBAAqB,CAAC"}

@@ -1,7 +1,9 @@
 import { APIObject, DatabaseSpec, Logger, APIObjectDatabase, CharacterSetSpec, CollationSpec } from "preql-core";
 
-const transpileDatabase = async (obj: APIObject<DatabaseSpec>, logger: Logger, etcd: APIObjectDatabase): Promise<string> => {
-    let ret: string = `CREATE DATABASE IF NOT EXISTS ${obj.spec.name};`;
+const transpileDatabase = async (obj: APIObject<DatabaseSpec>, logger: Logger, etcd: APIObjectDatabase): Promise<string[]> => {
+    let ret: string[] = [
+        `CREATE DATABASE IF NOT EXISTS ${obj.spec.name}`,
+    ];
 
     if (obj.spec.characterSet) {
         const characterSet: APIObject<CharacterSetSpec> | undefined = etcd.kindIndex.characterset
@@ -11,7 +13,7 @@ const transpileDatabase = async (obj: APIObject<DatabaseSpec>, logger: Logger, e
                 = characterSet.spec.targetEquivalents.mariadb
                 || characterSet.spec.targetEquivalents.mysql;
             if (mariaDBEquivalent) {
-                ret += `\r\nALTER DATABASE ${obj.spec.name} DEFAULT CHARACTER SET = '${mariaDBEquivalent}';`;
+                ret.push(`ALTER DATABASE ${obj.spec.name} DEFAULT CHARACTER SET = '${mariaDBEquivalent}'`);
             } else {
                 logger.warn(
                     "No MariaDB or MySQL equivalent character set for PreQL "
@@ -34,7 +36,7 @@ const transpileDatabase = async (obj: APIObject<DatabaseSpec>, logger: Logger, e
                 = collation.spec.targetEquivalents.mariadb
                 || collation.spec.targetEquivalents.mysql;
             if (mariaDBEquivalent) {
-                ret += `\r\nALTER DATABASE ${obj.spec.name} DEFAULT COLLATE = '${mariaDBEquivalent}';`;
+                ret.push(`ALTER DATABASE ${obj.spec.name} DEFAULT COLLATE = '${mariaDBEquivalent}'`);
             } else {
                 logger.warn(
                     "No MariaDB or MySQL equivalent collation for PreQL "

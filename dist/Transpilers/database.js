@@ -1,7 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const transpileDatabase = async (obj, logger, etcd) => {
-    let ret = `CREATE DATABASE IF NOT EXISTS ${obj.spec.name};`;
+    let ret = [
+        `CREATE DATABASE IF NOT EXISTS ${obj.spec.name}`,
+    ];
     if (obj.spec.characterSet) {
         const characterSet = etcd.kindIndex.characterset
             .find((cs) => obj.spec.characterSet === cs.spec.name);
@@ -9,7 +11,7 @@ const transpileDatabase = async (obj, logger, etcd) => {
             const mariaDBEquivalent = characterSet.spec.targetEquivalents.mariadb
                 || characterSet.spec.targetEquivalents.mysql;
             if (mariaDBEquivalent) {
-                ret += `\r\nALTER DATABASE ${obj.spec.name} DEFAULT CHARACTER SET = '${mariaDBEquivalent}';`;
+                ret.push(`ALTER DATABASE ${obj.spec.name} DEFAULT CHARACTER SET = '${mariaDBEquivalent}'`);
             }
             else {
                 logger.warn("No MariaDB or MySQL equivalent character set for PreQL "
@@ -28,7 +30,7 @@ const transpileDatabase = async (obj, logger, etcd) => {
             const mariaDBEquivalent = collation.spec.targetEquivalents.mariadb
                 || collation.spec.targetEquivalents.mysql;
             if (mariaDBEquivalent) {
-                ret += `\r\nALTER DATABASE ${obj.spec.name} DEFAULT COLLATE = '${mariaDBEquivalent}';`;
+                ret.push(`ALTER DATABASE ${obj.spec.name} DEFAULT COLLATE = '${mariaDBEquivalent}'`);
             }
             else {
                 logger.warn("No MariaDB or MySQL equivalent collation for PreQL "

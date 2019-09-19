@@ -8,17 +8,17 @@ const transpileTextIndex = async (obj) => {
     const columnString = obj.spec.keyAttributes
         .map((key) => `${key.name} ${(key.ascending ? "ASC" : "DESC")}`)
         .join(", ");
-    return (`DROP PROCEDURE IF EXISTS ${storedProcedureName};\r\n`
-        + "DELIMITER ;;\r\n"
-        + `CREATE PROCEDURE ${storedProcedureName} ()\r\n`
-        + "BEGIN\r\n"
-        + "\tDECLARE EXIT HANDLER FOR 1061 DO 0;\r\n"
-        + `\tALTER TABLE ${schemaName}.${tableName}\r\n`
-        + `\tADD FULLTEXT INDEX (${columnString});\r\n`
-        + "END ;;\r\n"
-        + "DELIMITER ;\r\n"
-        + `CALL ${storedProcedureName};\r\n`
-        + `DROP PROCEDURE IF EXISTS ${storedProcedureName};`);
+    return [
+        `DROP PROCEDURE IF EXISTS ${storedProcedureName}`,
+        `CREATE PROCEDURE ${storedProcedureName} ()\r\n`
+            + "BEGIN\r\n"
+            + "\tDECLARE EXIT HANDLER FOR 1061 DO 0;\r\n"
+            + `\tALTER TABLE ${schemaName}.${tableName}\r\n`
+            + `\tADD FULLTEXT INDEX (${columnString});\r\n`
+            + "END",
+        `CALL ${storedProcedureName}`,
+        `DROP PROCEDURE IF EXISTS ${storedProcedureName}`,
+    ];
 };
 exports.default = transpileTextIndex;
 //# sourceMappingURL=textindex.js.map

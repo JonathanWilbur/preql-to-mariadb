@@ -21,93 +21,135 @@ const server_1 = __importDefault(require("../Transpilers/server"));
 const dropAllPreqlCheckConstraintsForTableTemplate = (db) => {
     const schemaName = db.spec.name;
     const spName = `${schemaName}.dropAllPreqlCheckConstraintsForTable`;
-    return `DROP PROCEDURE IF EXISTS ${spName};\r\n`
-        + "DELIMITER ;;\r\n"
-        + `CREATE PROCEDURE ${spName} (IN param_table VARCHAR(255))\r\n`
-        + "BEGIN\r\n"
-        + "\tDECLARE done BOOLEAN DEFAULT FALSE;\r\n"
-        + "\tDECLARE dropCommand VARCHAR(255);\r\n"
-        + "\tDECLARE dropCur CURSOR FOR\r\n"
-        + `\t\tSELECT concat('ALTER TABLE ${schemaName}.', table_name, ' DROP CONSTRAINT ', constraint_name, ';')\r\n`
-        + "\t\tFROM information_schema.table_constraints\r\n"
-        + "\t\tWHERE\r\n"
-        + "\t\t\tconstraint_type = 'CHECK'\r\n"
-        + "\t\t\tAND constraint_name LIKE 'preql_'\r\n"
-        + `\t\t\tAND table_schema = '${schemaName}'\r\n`
-        + "\t\t\tAND table_name = param_table;\r\n"
-        + "\tDECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;\r\n"
-        + "\tOPEN dropCur;\r\n"
-        + "\tread_loop: LOOP\r\n"
-        + "\t\tFETCH dropCur\r\n"
-        + "\t\tINTO dropCommand;\r\n"
-        + "\t\tIF done THEN\r\n"
-        + "\t\t\tLEAVE read_loop;\r\n"
-        + "\t\tEND IF;\r\n"
-        + "\t\tSET @sdropCommand = dropCommand;\r\n"
-        + "\t\tPREPARE dropClientUpdateKeyStmt FROM @sdropCommand;\r\n"
-        + "\t\tEXECUTE dropClientUpdateKeyStmt;\r\n"
-        + "\t\tDEALLOCATE PREPARE dropClientUpdateKeyStmt;\r\n"
-        + "\tEND LOOP;\r\n"
-        + "\tCLOSE dropCur;\r\n"
-        + "END ;;\r\n"
-        + "DELIMITER ;";
+    return [
+        `DROP PROCEDURE IF EXISTS ${spName}`,
+        `CREATE PROCEDURE ${spName} (IN param_table VARCHAR(255))\r\n`
+            + "BEGIN\r\n"
+            + "\tDECLARE done BOOLEAN DEFAULT FALSE;\r\n"
+            + "\tDECLARE dropCommand VARCHAR(255);\r\n"
+            + "\tDECLARE dropCur CURSOR FOR\r\n"
+            + `\t\tSELECT concat('ALTER TABLE ${schemaName}.', table_name, ' DROP CONSTRAINT ', constraint_name, ';')\r\n`
+            + "\t\tFROM information_schema.table_constraints\r\n"
+            + "\t\tWHERE\r\n"
+            + "\t\t\tconstraint_type = 'CHECK'\r\n"
+            + "\t\t\tAND constraint_name LIKE 'preql_'\r\n"
+            + `\t\t\tAND table_schema = '${schemaName}'\r\n`
+            + "\t\t\tAND table_name = param_table;\r\n"
+            + "\tDECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;\r\n"
+            + "\tOPEN dropCur;\r\n"
+            + "\tread_loop: LOOP\r\n"
+            + "\t\tFETCH dropCur\r\n"
+            + "\t\tINTO dropCommand;\r\n"
+            + "\t\tIF done THEN\r\n"
+            + "\t\t\tLEAVE read_loop;\r\n"
+            + "\t\tEND IF;\r\n"
+            + "\t\tSET @sdropCommand = dropCommand;\r\n"
+            + "\t\tPREPARE dropClientUpdateKeyStmt FROM @sdropCommand;\r\n"
+            + "\t\tEXECUTE dropClientUpdateKeyStmt;\r\n"
+            + "\t\tDEALLOCATE PREPARE dropClientUpdateKeyStmt;\r\n"
+            + "\tEND LOOP;\r\n"
+            + "\tCLOSE dropCur;\r\n"
+            + "END",
+    ];
 };
-const callDropAllPreqlCheckConstraintsForTableTemplate = (struct) => `CALL ${struct.spec.databaseName}.dropAllPreqlCheckConstraintsForTable('${struct.spec.name}');`;
+const callDropAllPreqlCheckConstraintsForTableTemplate = (struct) => [
+    `CALL ${struct.spec.databaseName}.dropAllPreqlCheckConstraintsForTable('${struct.spec.name}')`,
+];
 const transpile = async (etcd, logger) => {
     let transpilations = [];
     const preambles = etcd.kindIndex.preamble;
     if (preambles && preambles.length > 0) {
-        transpilations = transpilations.concat(await Promise.all(preambles.map(async (obj) => preamble_1.default(obj))));
+        await Promise.all(preambles.map(async (obj) => {
+            const statements = await preamble_1.default(obj);
+            transpilations = transpilations.concat(statements);
+        }));
     }
     const servers = etcd.kindIndex.server;
     if (servers && servers.length > 0) {
-        transpilations = transpilations.concat(await Promise.all(servers.map(async (obj) => server_1.default(obj, logger, etcd))));
+        await Promise.all(servers.map(async (obj) => {
+            const statements = await server_1.default(obj, logger, etcd);
+            transpilations = transpilations.concat(statements);
+        }));
     }
     const databases = etcd.kindIndex.database;
     if (databases && databases.length > 0) {
-        transpilations = transpilations.concat(await Promise.all(databases.map(async (obj) => database_1.default(obj, logger, etcd))));
-        transpilations = transpilations.concat(await Promise.all(databases.map(async (obj) => dropAllPreqlCheckConstraintsForTableTemplate(obj))));
+        await Promise.all(databases.map(async (obj) => {
+            const statements = await database_1.default(obj, logger, etcd);
+            transpilations = transpilations.concat(statements);
+        }));
+        await Promise.all(servers.map(async (obj) => {
+            const statements = dropAllPreqlCheckConstraintsForTableTemplate(obj);
+            transpilations = transpilations.concat(statements);
+        }));
     }
     const structs = etcd.kindIndex.struct;
     if (structs && structs.length > 0) {
-        transpilations = transpilations.concat(await Promise.all(structs.map(async (obj) => struct_1.default(obj, logger, etcd))));
-        transpilations = transpilations.concat(await Promise.all(structs.map(async (obj) => callDropAllPreqlCheckConstraintsForTableTemplate(obj))));
+        await Promise.all(structs.map(async (obj) => {
+            const statements = await struct_1.default(obj, logger, etcd);
+            transpilations = transpilations.concat(statements);
+        }));
+        await Promise.all(structs.map(async (obj) => {
+            const statements = callDropAllPreqlCheckConstraintsForTableTemplate(obj);
+            transpilations = transpilations.concat(statements);
+        }));
     }
     const attributes = etcd.kindIndex.attribute;
     if (attributes && attributes.length > 0) {
-        transpilations = transpilations.concat(await Promise.all(attributes.map(async (obj) => attribute_1.default(obj, logger, etcd))));
+        await Promise.all(attributes.map(async (obj) => {
+            const statements = await attribute_1.default(obj, logger, etcd);
+            transpilations = transpilations.concat(statements);
+        }));
     }
     const plainindexes = etcd.kindIndex.plainindex;
     if (plainindexes && plainindexes.length > 0) {
-        transpilations = transpilations.concat(await Promise.all(plainindexes.map(async (obj) => plainindex_1.default(obj))));
+        await Promise.all(plainindexes.map(async (obj) => {
+            const statements = await plainindex_1.default(obj);
+            transpilations = transpilations.concat(statements);
+        }));
     }
     const uniqueindexes = etcd.kindIndex.uniqueindex;
     if (uniqueindexes && uniqueindexes.length > 0) {
-        transpilations = transpilations.concat(await Promise.all(uniqueindexes.map(async (obj) => uniqueindex_1.default(obj))));
+        await Promise.all(uniqueindexes.map(async (obj) => {
+            const statements = await uniqueindex_1.default(obj);
+            transpilations = transpilations.concat(statements);
+        }));
     }
     const textindexes = etcd.kindIndex.textindex;
     if (textindexes && textindexes.length > 0) {
-        transpilations = transpilations.concat(await Promise.all(textindexes.map(async (obj) => textindex_1.default(obj))));
+        await Promise.all(textindexes.map(async (obj) => {
+            const statements = await textindex_1.default(obj);
+            transpilations = transpilations.concat(statements);
+        }));
     }
     const spatialindexes = etcd.kindIndex.spatialindex;
     if (spatialindexes && spatialindexes.length > 0) {
-        transpilations = transpilations.concat(await Promise.all(spatialindexes.map(async (obj) => spatialindex_1.default(obj))));
+        await Promise.all(spatialindexes.map(async (obj) => {
+            const statements = await spatialindex_1.default(obj);
+            transpilations = transpilations.concat(statements);
+        }));
     }
     const foreignKeys = etcd.kindIndex.foreignkey;
     if (foreignKeys && foreignKeys.length > 0) {
-        transpilations = transpilations.concat(await Promise.all(foreignKeys.map(async (obj) => foreignkey_1.default(obj))));
+        await Promise.all(foreignKeys.map(async (obj) => {
+            const statements = await foreignkey_1.default(obj);
+            transpilations = transpilations.concat(statements);
+        }));
     }
     const entries = etcd.kindIndex.entry;
     if (entries && entries.length > 0) {
-        transpilations = transpilations.concat(await Promise.all(entries.map(async (obj) => entry_1.default(obj))));
+        await Promise.all(entries.map(async (obj) => {
+            const statements = await entry_1.default(obj);
+            transpilations = transpilations.concat(statements);
+        }));
     }
     const postambles = etcd.kindIndex.postamble;
     if (postambles && postambles.length !== 0) {
-        transpilations = transpilations.concat(await Promise.all(postambles.map(async (obj) => postamble_1.default(obj))));
+        await Promise.all(postambles.map(async (obj) => {
+            const statements = await postamble_1.default(obj);
+            transpilations = transpilations.concat(statements);
+        }));
     }
-    return "START TRANSACTION;\r\n\r\n"
-        + `${transpilations.filter((t) => (t !== "")).join("\r\n\r\n")}\r\n\r\n`
-        + "COMMIT;\r\n";
+    return transpilations.filter((t) => (t.trim() !== ""));
 };
 exports.default = transpile;
 //# sourceMappingURL=transpile.js.map

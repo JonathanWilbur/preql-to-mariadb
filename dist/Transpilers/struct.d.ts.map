@@ -1,1 +1,1 @@
-{"version":3,"file":"struct.d.ts","sourceRoot":"","sources":["../../source/Transpilers/struct.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,SAAS,EAAE,UAAU,EAAE,MAAM,EAAE,iBAAiB,EAAmC,MAAM,YAAY,CAAC;AAE/G,QAAA,MAAM,eAAe,0FAqDpB,CAAC;AAEF,eAAe,eAAe,CAAC"}
+{"version":3,"file":"struct.d.ts","sourceRoot":"","sources":["../../source/Transpilers/struct.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,SAAS,EAAE,UAAU,EAAE,MAAM,EAAE,iBAAiB,EAAmC,MAAM,YAAY,CAAC;AAE/G,QAAA,MAAM,eAAe,4FAqDpB,CAAC;AAEF,eAAe,eAAe,CAAC"}

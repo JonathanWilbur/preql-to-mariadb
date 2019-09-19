@@ -20,7 +20,7 @@ const handler = async (event, context, callback) => {
         await Promise.all(Object.values(namespaces).map(preql_core_1.validateNamespace));
         const transpilation = await transpile_1.default(namespaces[event.namespace || "default"], loggy);
         callback(null, {
-            value: transpilation,
+            statements: transpilation,
         });
     }
     catch (e) {

@@ -4,20 +4,19 @@ const transpileAttribute = async (obj, logger, etcd) => {
     const tableName = obj.spec.multiValued
         ? `${obj.spec.structName}_${obj.spec.name}`
         : obj.spec.structName;
-    let columnString = "";
+    let ret = [];
     if (obj.spec.multiValued) {
-        columnString = (`CREATE TABLE IF NOT EXISTS ${obj.spec.databaseName}.${tableName} (\r\n`
+        ret.push(`CREATE TABLE IF NOT EXISTS ${obj.spec.databaseName}.${tableName} (\r\n`
             + `\t${obj.spec.structName}_id BIGINT UNSIGNED NOT NULL,\r\n`
             + `\tFOREIGN KEY (${obj.spec.structName}_id) REFERENCES ${obj.spec.structName} (id)\r\n`
             + ");\r\n");
     }
     const type = obj.spec.type.toLowerCase();
-    const datatype = (etcd.kindIndex.datatype || [])
-        .find((dt) => dt.metadata.name.toLowerCase() === type);
+    const datatype = etcd.kindNameIndex[`datatype:${obj.spec.type.toLowerCase()}`];
     if (!datatype) {
         throw new Error(`Data type '${type}' not recognized.`);
     }
-    columnString += `ALTER TABLE ${obj.spec.databaseName}.${tableName}\r\n`
+    let columnString = `ALTER TABLE ${obj.spec.databaseName}.${tableName}\r\n`
         + `ADD COLUMN IF NOT EXISTS \`${obj.spec.name}\` `;
     if (datatype.spec.values) {
         const maxLengthValue = datatype.spec.values.sort((a, b) => (b.length - a.length))[0].length;
@@ -81,37 +80,34 @@ const transpileAttribute = async (obj, logger, etcd) => {
         columnString += `\r\nCOMMENT '${obj.metadata.annotations.comment}'`;
     }
     columnString += ";";
+    ret.push(columnString);
     if (datatype.spec.values) {
-        columnString += "\r\n";
         const storedProcedureName = `${obj.spec.databaseName}.add_enum_${datatype.spec.name}`;
         const foreignKeyName = `enum_${obj.spec.structName}_${obj.spec.name}`;
         const enumTableName = `${datatype.spec.name}_enum`;
         const maxLengthValue = datatype.spec.values.sort((a, b) => (b.length - a.length))[0].length;
         // Add Enum Table
-        columnString += (`CREATE TABLE IF NOT EXISTS ${obj.spec.databaseName}.${enumTableName} (\r\n`
+        ret.push(`CREATE TABLE IF NOT EXISTS ${obj.spec.databaseName}.${enumTableName} (\r\n`
             + `\tvalue CHAR(${maxLengthValue}) NOT NULL PRIMARY KEY\r\n`
-            + ");\r\n");
+            + ")");
         // Insert Enum Values
-        columnString += (`INSERT IGNORE INTO ${obj.spec.databaseName}.${enumTableName} VALUES\r\n`
+        ret.push(`INSERT IGNORE INTO ${obj.spec.databaseName}.${enumTableName} VALUES\r\n`
             + datatype.spec.values
                 .map((v, i) => `\t/* ${obj.spec.databaseName}.${enumTableName}[${i}] */ ('${v}')`)
-                .join(",\r\n")
-            + "\r\n;\r\n");
+                .join(",\r\n"));
         // Add FKC
-        columnString += (`DROP PROCEDURE IF EXISTS ${storedProcedureName};\r\n`
-            + "DELIMITER ;;\r\n"
-            + `CREATE PROCEDURE ${storedProcedureName} ()\r\n`
+        ret.push(`DROP PROCEDURE IF EXISTS ${storedProcedureName}`);
+        ret.push(+`CREATE PROCEDURE ${storedProcedureName} ()\r\n`
             + "BEGIN\r\n"
             + "\tDECLARE EXIT HANDLER FOR 1005 DO 0;\r\n"
             + `\tALTER TABLE ${obj.spec.databaseName}.${obj.spec.structName}\r\n`
             + `\tADD CONSTRAINT ${foreignKeyName} FOREIGN KEY\r\n`
             + `\tIF NOT EXISTS ${foreignKeyName}_index (\`${obj.spec.name}\`)\r\n`
             + `\tREFERENCES ${enumTableName} (value);\r\n`
-            + "END ;;\r\n"
-            + "DELIMITER ;\r\n"
-            + `CALL ${storedProcedureName};\r\n`
-            + `DROP PROCEDURE IF EXISTS ${storedProcedureName};`);
-        return columnString;
+            + "END");
+        ret.push(`CALL ${storedProcedureName}`);
+        ret.push(`DROP PROCEDURE IF EXISTS ${storedProcedureName}`);
+        return ret;
     }
     if (datatype.spec.regexes && datatype.spec.regexes.pcre) {
         const checkRegexps = [];
@@ -127,11 +123,8 @@ const transpileAttribute = async (obj, logger, etcd) => {
             checkRegexps.push(`(${groupRegexps.join(" AND ")})`);
         });
         const qualifiedTableName = `${obj.spec.databaseName}.${tableName}`;
-        columnString += (`\r\nALTER TABLE ${qualifiedTableName}\r\n`
-            + `DROP CONSTRAINT IF EXISTS ${constraintBaseName};\r\n`
-            + `ALTER TABLE ${qualifiedTableName}\r\n`
-            + `ADD CONSTRAINT IF NOT EXISTS ${constraintBaseName}\r\n`
-            + `CHECK (${checkRegexps.join(" OR ")});`);
+        ret.push(`ALTER TABLE ${qualifiedTableName}\r\nDROP CONSTRAINT IF EXISTS ${constraintBaseName}`);
+        ret.push(`ALTER TABLE ${qualifiedTableName}\r\nADD CONSTRAINT IF NOT EXISTS ${constraintBaseName}\r\nCHECK (${checkRegexps.join(" OR ")})`);
     }
     if (datatype.spec.setters) {
         const qualifiedTableName = `${obj.spec.databaseName}.${tableName}`;
@@ -207,16 +200,17 @@ const transpileAttribute = async (obj, logger, etcd) => {
                 }
             }
         });
-        columnString += (`\r\nDROP TRIGGER IF EXISTS ${triggerBaseName}_insert;\r\n`
-            + `CREATE TRIGGER IF NOT EXISTS ${triggerBaseName}_insert\r\n`
+        ret.push(`DROP TRIGGER IF EXISTS ${triggerBaseName}_insert`);
+        ret.push(`BEFORE INSERT ON ${qualifiedTableName} FOR EACH ROW\r\nSET NEW.${obj.spec.name} = ${previousExpression}`);
+        ret.push(`CREATE TRIGGER IF NOT EXISTS ${triggerBaseName}_insert\r\n`
             + `BEFORE INSERT ON ${qualifiedTableName} FOR EACH ROW\r\n`
-            + `SET NEW.${obj.spec.name} = ${previousExpression};\r\n`
-            + `DROP TRIGGER IF EXISTS ${triggerBaseName}_update;\r\n`
-            + `CREATE TRIGGER IF NOT EXISTS ${triggerBaseName}_update\r\n`
+            + `SET NEW.${obj.spec.name} = ${previousExpression}\r\n`);
+        ret.push(`DROP TRIGGER IF EXISTS ${triggerBaseName}_update`);
+        ret.push(`CREATE TRIGGER IF NOT EXISTS ${triggerBaseName}_update\r\n`
             + `BEFORE UPDATE ON ${qualifiedTableName} FOR EACH ROW\r\n`
-            + `SET NEW.${obj.spec.name} = ${previousExpression};`);
+            + `SET NEW.${obj.spec.name} = ${previousExpression}`);
     }
-    return columnString;
+    return ret;
 };
 exports.default = transpileAttribute;
 //# sourceMappingURL=attribute.js.map

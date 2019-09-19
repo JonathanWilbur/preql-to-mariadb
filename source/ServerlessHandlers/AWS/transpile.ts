@@ -18,9 +18,9 @@ const handler: Handler = async (
         await Promise.all(event.objects.map(validateObject));
         const namespaces = await indexObjects(event.objects);
         await Promise.all(Object.values(namespaces).map(validateNamespace));
-        const transpilation: string = await transpile(namespaces[event.namespace || "default"], loggy);
+        const transpilation: string[] = await transpile(namespaces[event.namespace || "default"], loggy);
         callback(null, {
-            value: transpilation,
+            statements: transpilation,
         });
     } catch (e) {
         callback(normalizeError(e));
