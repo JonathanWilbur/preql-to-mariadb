@@ -77,7 +77,7 @@ const transpile = async (etcd, logger) => {
             const statements = await database_1.default(obj, logger, etcd);
             transpilations = transpilations.concat(statements);
         }));
-        await Promise.all(servers.map(async (obj) => {
+        await Promise.all(databases.map(async (obj) => {
             const statements = dropAllPreqlCheckConstraintsForTableTemplate(obj);
             transpilations = transpilations.concat(statements);
         }));
