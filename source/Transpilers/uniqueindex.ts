@@ -4,7 +4,7 @@ const transpileUniqueIndex = async (obj: APIObject<UniqueIndexSpec>): Promise<st
     const schemaName: string = obj.spec.databaseName;
     const tableName: string = obj.spec.structName;
     const indexName: string = obj.spec.name;
-    const storedProcedureName: string = `create_index_${indexName}`;
+    const storedProcedureName: string = `${schemaName}.create_index_${indexName}`;
     const columnString: string = obj.spec.keyAttributes
         .map((key): string => `${key.name} ${(key.ascending ? "ASC" : "DESC")}`)
         .join(", ");

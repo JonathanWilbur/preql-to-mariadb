@@ -4,7 +4,7 @@ const transpileTextIndex = async (obj) => {
     const schemaName = obj.spec.databaseName;
     const tableName = obj.spec.structName;
     const indexName = obj.spec.name;
-    const storedProcedureName = `create_index_${indexName}`;
+    const storedProcedureName = `${schemaName}.create_index_${indexName}`;
     const columnString = obj.spec.keyAttributes
         .map((key) => `${key.name} ${(key.ascending ? "ASC" : "DESC")}`)
         .join(", ");
