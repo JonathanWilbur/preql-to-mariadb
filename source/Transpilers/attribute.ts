@@ -100,7 +100,6 @@ const transpileAttribute = async (
     if (obj.metadata.annotations && obj.metadata.annotations.comment) {
         columnString += `\r\nCOMMENT '${obj.metadata.annotations.comment}'`;
     }
-    columnString += ";";
     ret.push(columnString);
 
     if (datatype.spec.values) {

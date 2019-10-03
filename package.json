@@ -1,6 +1,6 @@
 {
     "name": "preql-mariadb",
-    "version": "0.4.1",
+    "version": "0.4.2",
     "description": "Library for converting PreQL to MariaDB SQL",
     "main": "./dist/index.js",
     "scripts": {
@@ -23,24 +23,24 @@
     ],
     "license": "MIT",
     "dependencies": {
-        "preql-core": "^1.0.0",
+        "preql-core": "^1.0.4",
         "tz-offset": "0.0.2"
     },
     "devDependencies": {
-        "@babel/core": "^7.6.0",
-        "@babel/preset-env": "^7.6.0",
+        "@babel/core": "^7.6.2",
+        "@babel/preset-env": "^7.6.2",
         "@babel/preset-typescript": "^7.6.0",
-        "@types/aws-lambda": "^8.10.31",
+        "@types/aws-lambda": "^8.10.33",
         "@types/tz-offset": "0.0.0",
-        "@typescript-eslint/eslint-plugin": "^2.3.0",
-        "@typescript-eslint/parser": "^2.3.0",
-        "eslint": "^6.4.0",
+        "@typescript-eslint/eslint-plugin": "^2.3.2",
+        "@typescript-eslint/parser": "^2.3.2",
+        "eslint": "^6.5.1",
         "jest": "^24.9.0",
         "jest-junit": "^8.0.0",
-        "serverless": "^1.52.0",
-        "ts-loader": "^6.1.0",
+        "serverless": "^1.53.0",
+        "ts-loader": "^6.2.0",
         "typescript": "^3.6.3",
-        "webpack": "^4.40.2",
+        "webpack": "^4.41.0",
         "webpack-cli": "^3.3.9"
     },
     "files": [

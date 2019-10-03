@@ -1,1 +1,1 @@
-{"version":3,"file":"attribute.d.ts","sourceRoot":"","sources":["../../source/Transpilers/attribute.ts"],"names":[],"mappings":"AAAA,OAAO,EACH,SAAS,EACT,iBAAiB,EACjB,aAAa,EAIb,MAAM,EACT,MAAM,YAAY,CAAC;AAEpB,QAAA,MAAM,kBAAkB,+FAuOvB,CAAC;AAEF,eAAe,kBAAkB,CAAC"}
+{"version":3,"file":"attribute.d.ts","sourceRoot":"","sources":["../../source/Transpilers/attribute.ts"],"names":[],"mappings":"AAAA,OAAO,EACH,SAAS,EACT,iBAAiB,EACjB,aAAa,EAIb,MAAM,EACT,MAAM,YAAY,CAAC;AAEpB,QAAA,MAAM,kBAAkB,+FAsOvB,CAAC;AAEF,eAAe,kBAAkB,CAAC"}

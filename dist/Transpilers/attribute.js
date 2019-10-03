@@ -79,7 +79,6 @@ const transpileAttribute = async (obj, logger, etcd) => {
     if (obj.metadata.annotations && obj.metadata.annotations.comment) {
         columnString += `\r\nCOMMENT '${obj.metadata.annotations.comment}'`;
     }
-    columnString += ";";
     ret.push(columnString);
     if (datatype.spec.values) {
         const storedProcedureName = `${obj.spec.databaseName}.add_enum_${datatype.spec.name}`;

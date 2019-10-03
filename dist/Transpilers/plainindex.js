@@ -6,8 +6,7 @@ const transpilePlainIndex = async (obj) => {
         .join(", ");
     return [
         `ALTER TABLE ${obj.spec.databaseName}.${obj.spec.structName}\r\n`
-            + `ADD INDEX IF NOT EXISTS ${obj.spec.name}\r\n`
-            + `PRIMARY KEY (${columnString});`,
+            + `ADD INDEX IF NOT EXISTS ${obj.spec.name} (${columnString})`,
     ];
 };
 exports.default = transpilePlainIndex;
